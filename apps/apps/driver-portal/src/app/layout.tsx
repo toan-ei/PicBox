@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-export const metadata: Metadata = { title: "PicBox Driver Portal", description: "Cổng thông tin Driver - PicBox" };
+const inter = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-sans", display: "swap" });
+
+export const metadata: Metadata = {
+  title: "PicBox Driver",
+  description: "Cổng thông tin dành cho Driver nội bộ PicBox",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="vi"><body>{children}</body></html>;
+  return (
+    <html lang="vi" className={inter.variable}>
+      <body className="antialiased">{children}</body>
+    </html>
+  );
 }
