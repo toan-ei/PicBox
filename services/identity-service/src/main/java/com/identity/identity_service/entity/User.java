@@ -1,11 +1,10 @@
 package com.identity.identity_service.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
+
+
+import java.util.Set;
 
 @Entity
 @Getter
@@ -19,4 +18,11 @@ public class User {
     private String id;
     private String username;
     private String password;
+    @ManyToMany
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "roles_name")
+    )
+    private Set<Role> roles;
 }
