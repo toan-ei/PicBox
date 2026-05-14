@@ -1,0 +1,22 @@
+{
+  "name": "picbox-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "dev:admin": "npm run dev",
+    "dev:shipper": "npm run dev --workspace=apps/shipper-portal",
+    "dev:driver": "npm run dev --workspace=apps/driver-portal",
+    "dev:ops": "npm run dev --workspace=apps/ops-dashboard",
+    "build:admin": "npm run build --workspace=apps/admin-web"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  }
+}
