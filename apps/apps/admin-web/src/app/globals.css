@@ -138,3 +138,12 @@ body {
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
 }
+
+/* ===== Sidebar layout offset =====
+   Sidebar is position:fixed so the main area needs manual margin-left on desktop.
+   256px = expanded, 72px = collapsed (must match SIDEBAR_W constants in sidebar.tsx)
+*/
+@media (min-width: 1024px) {
+  .sidebar-main-expanded  { margin-left: 256px; }
+  .sidebar-main-collapsed { margin-left: 72px; }
+}
