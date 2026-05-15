@@ -1,0 +1,375 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import {
+  Search, Filter, Plus, Package,
+  ChevronLeft, ChevronRight, Eye,
+  ArrowUpDown, X, Home
+} from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
+// ---- Types (dùng tạm, sau sẽ import từ @picbox/types) ----
+type OrderStatus =
+  | 'pending' | 'confirmed' | 'picked_up' | 'in_transit'
+  | 'at_hub' | 'sorting' | 'out_for_delivery'
+  | 'delivered' | 'failed' | 'returned' | 'cancelled'
+
+interface Order {
+  id: string
+  trackingCode: string
+  receiverName: string
+  receiverPhone: string
+  receiverAddress: string
+  weight: number
+  codAmount: number
+  shippingFee: number
+  status: OrderStatus
+  createdAt: string
+}
+
+// ---- Mock data ----
+const mockOrders: Order[] = [
+  { id: '1', trackingCode: 'PB001234', receiverName: 'Nguyễn Văn A', receiverPhone: '0901234567', receiverAddress: 'Quận 1, TP.HCM', weight: 1.5, codAmount: 250000, shippingFee: 30000, status: 'delivering' as OrderStatus, createdAt: '2026-05-15T08:00:00Z' },
+  { id: '2', trackingCode: 'PB001235', receiverName: 'Trần Thị B', receiverPhone: '0912345678', receiverAddress: 'Quận 3, TP.HCM', weight: 0.5, codAmount: 0, shippingFee: 20000, status: 'delivered', createdAt: '2026-05-15T07:30:00Z' },
+  { id: '3', trackingCode: 'PB001236', receiverName: 'Lê Văn C', receiverPhone: '0923456789', receiverAddress: 'Bình Thạnh, TP.HCM', weight: 2.0, codAmount: 500000, shippingFee: 35000, status: 'pending', createdAt: '2026-05-15T07:00:00Z' },
+  { id: '4', trackingCode: 'PB001237', receiverName: 'Phạm Thị D', receiverPhone: '0934567890', receiverAddress: 'Gò Vấp, TP.HCM', weight: 3.0, codAmount: 150000, shippingFee: 40000, status: 'returned', createdAt: '2026-05-14T15:00:00Z' },
+  { id: '5', trackingCode: 'PB001238', receiverName: 'Hoàng Văn E', receiverPhone: '0945678901', receiverAddress: 'Tân Bình, TP.HCM', weight: 1.0, codAmount: 0, shippingFee: 25000, status: 'confirmed', createdAt: '2026-05-14T14:00:00Z' },
+  { id: '6', trackingCode: 'PB001239', receiverName: 'Võ Thị F', receiverPhone: '0956789012', receiverAddress: 'Phú Nhuận, TP.HCM', weight: 0.8, codAmount: 320000, shippingFee: 22000, status: 'cancelled', createdAt: '2026-05-14T13:00:00Z' },
+  { id: '7', trackingCode: 'PB001240', receiverName: 'Đặng Văn G', receiverPhone: '0967890123', receiverAddress: 'Quận 7, TP.HCM', weight: 5.0, codAmount: 800000, shippingFee: 55000, status: 'in_transit', createdAt: '2026-05-14T10:00:00Z' },
+  { id: '8', trackingCode: 'PB001241', receiverName: 'Bùi Thị H', receiverPhone: '0978901234', receiverAddress: 'Quận 10, TP.HCM', weight: 1.2, codAmount: 0, shippingFee: 28000, status: 'out_for_delivery', createdAt: '2026-05-14T09:00:00Z' },
+  { id: '9', trackingCode: 'PB001242', receiverName: 'Ngô Văn I', receiverPhone: '0989012345', receiverAddress: 'Quận 12, TP.HCM', weight: 2.5, codAmount: 450000, shippingFee: 38000, status: 'picked_up', createdAt: '2026-05-13T16:00:00Z' },
+  { id: '10', trackingCode: 'PB001243', receiverName: 'Dương Thị K', receiverPhone: '0990123456', receiverAddress: 'Thủ Đức, TP.HCM', weight: 0.3, codAmount: 180000, shippingFee: 18000, status: 'failed', createdAt: '2026-05-13T11:00:00Z' },
+]
+
+// ---- Status config ----
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  pending:          { label: 'Chờ xác nhận',   color: 'bg-gray-100 text-gray-600' },
+  confirmed:        { label: 'Đã xác nhận',     color: 'bg-blue-100 text-blue-700' },
+  picked_up:        { label: 'Đã lấy hàng',     color: 'bg-indigo-100 text-indigo-700' },
+  in_transit:       { label: 'Đang vận chuyển', color: 'bg-purple-100 text-purple-700' },
+  at_hub:           { label: 'Tại bưu cục',     color: 'bg-orange-100 text-orange-700' },
+  sorting:          { label: 'Đang phân loại',  color: 'bg-yellow-100 text-yellow-700' },
+  out_for_delivery: { label: 'Đang giao',       color: 'bg-cyan-100 text-cyan-700' },
+  delivering:       { label: 'Đang giao',       color: 'bg-cyan-100 text-cyan-700' },
+  delivered:        { label: 'Đã giao',         color: 'bg-green-100 text-green-700' },
+  failed:           { label: 'Giao thất bại',   color: 'bg-red-100 text-red-700' },
+  returned:         { label: 'Hoàn hàng',       color: 'bg-rose-100 text-rose-700' },
+  cancelled:        { label: 'Đã hủy',          color: 'bg-gray-100 text-gray-400' },
+}
+
+const STATUS_FILTERS = [
+  { value: 'all',              label: 'Tất cả' },
+  { value: 'pending',          label: 'Chờ xác nhận' },
+  { value: 'confirmed',        label: 'Đã xác nhận' },
+  { value: 'out_for_delivery', label: 'Đang giao' },
+  { value: 'delivered',        label: 'Đã giao' },
+  { value: 'failed',           label: 'Thất bại' },
+  { value: 'returned',         label: 'Hoàn hàng' },
+  { value: 'cancelled',        label: 'Đã hủy' },
+]
+
+const PAGE_SIZE = 5
+
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatCurrency(amount: number) {
+  return amount.toLocaleString('vi-VN') + ' đ'
+}
+
+export default function OrdersPage() {
+  const router = useRouter()
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [page, setPage] = useState(1)
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
+  const [showFilter, setShowFilter] = useState(false)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+
+  // Fix: reset page khi filter thay đổi để tránh lỗi trang trống
+  useEffect(() => { setPage(1) }, [search, statusFilter, dateFrom, dateTo])
+
+  // Filter
+  const filtered = mockOrders
+    .filter(o => {
+      const matchSearch =
+        o.trackingCode.toLowerCase().includes(search.toLowerCase()) ||
+        o.receiverName.toLowerCase().includes(search.toLowerCase()) ||
+        o.receiverPhone.includes(search)
+      const matchStatus = statusFilter === 'all' || o.status === statusFilter
+      const matchDateFrom = !dateFrom || new Date(o.createdAt) >= new Date(dateFrom)
+      const matchDateTo = !dateTo || new Date(o.createdAt) <= new Date(dateTo + 'T23:59:59Z')
+      return matchSearch && matchStatus && matchDateFrom && matchDateTo
+    })
+    .sort((a, b) => {
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      return sortDir === 'desc' ? diff : -diff
+    })
+
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const hasActiveFilter = statusFilter !== 'all' || dateFrom || dateTo
+
+  const resetFilters = () => {
+    setStatusFilter('all')
+    setDateFrom('')
+    setDateTo('')
+    setPage(1)
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-1.5 text-xs text-gray-400">
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium"
+        >
+          <Home size={12} />
+          Trang chủ
+        </Link>
+        <ChevronRight size={12} className="text-gray-300" />
+        <span className="text-gray-500 font-medium">Danh sách đơn hàng</span>
+      </nav>
+
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold text-gray-900 leading-tight">Danh sách đơn hàng</h1>
+          <p className="text-xs text-gray-400 font-normal">
+            Tổng <span className="font-semibold text-gray-600">{filtered.length}</span> đơn hàng
+          </p>
+        </div>
+        <Link href="/orders/new"
+          className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm">
+          <Plus size={15} />
+          Tạo đơn mới
+        </Link>
+      </div>
+
+      {/* Search + Filter bar */}
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-2">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Tìm theo mã vận đơn, tên, SĐT người nhận..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Filter button */}
+          <button
+            onClick={() => setShowFilter(!showFilter)}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 border rounded-lg text-sm font-medium transition-colors ${
+              hasActiveFilter
+                ? 'border-blue-400 bg-blue-50 text-blue-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Filter size={14} />
+            Lọc
+            {hasActiveFilter && (
+              <span className="w-4 h-4 bg-blue-600 text-white rounded-full text-[10px] flex items-center justify-center font-bold">
+                !
+              </span>
+            )}
+          </button>
+
+          {/* Sort */}
+          <button
+            onClick={() => { setSortDir(d => d === 'desc' ? 'asc' : 'desc'); setPage(1) }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 border border-gray-200 bg-white rounded-lg text-sm text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            <ArrowUpDown size={14} />
+            {sortDir === 'desc' ? 'Mới nhất' : 'Cũ nhất'}
+          </button>
+        </div>
+
+        {/* Filter panel */}
+        {showFilter && (
+          <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-700">Bộ lọc nâng cao</span>
+              {hasActiveFilter && (
+                <button onClick={resetFilters}
+                  className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium">
+                  <X size={12} /> Xoá bộ lọc
+                </button>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Trạng thái</p>
+              <div className="flex flex-wrap gap-2">
+                {STATUS_FILTERS.map(f => (
+                  <button
+                    key={f.value}
+                    onClick={() => { setStatusFilter(f.value); setPage(1) }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      statusFilter === f.value
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Khoảng thời gian</p>
+              <div className="flex gap-3 items-center">
+                <input type="date" value={dateFrom}
+                  onChange={e => { setDateFrom(e.target.value); setPage(1) }}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <span className="text-gray-300 text-sm">→</span>
+                <input type="date" value={dateTo}
+                  onChange={e => { setDateTo(e.target.value); setPage(1) }}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status tab — dạng tab gạch chân, không dùng pill */}
+        <div className="flex gap-0 border-b border-gray-200 overflow-x-auto">
+          {STATUS_FILTERS.slice(0, 6).map(f => (
+            <button
+              key={f.value}
+              onClick={() => { setStatusFilter(f.value); setPage(1) }}
+              className={`flex-shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                statusFilter === f.value
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {paginated.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+            <Package size={40} className="mb-3 opacity-40" />
+            <p className="text-sm font-medium">Không tìm thấy đơn hàng nào</p>
+            <p className="text-xs mt-1">Thử thay đổi từ khóa hoặc bộ lọc</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">Mã vận đơn</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">Người nhận</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3 hidden md:table-cell">Địa chỉ</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3 hidden lg:table-cell">COD</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3 hidden lg:table-cell">Phí ship</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3">Trạng thái</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3 hidden sm:table-cell">Ngày tạo</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {paginated.map(order => {
+                  const status = STATUS_CONFIG[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-500' }
+                  return (
+                    <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3.5">
+                        <span className="font-mono text-sm font-semibold text-blue-600">
+                          {order.trackingCode}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="text-sm font-medium text-gray-900">{order.receiverName}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{order.receiverPhone}</p>
+                      </td>
+                      <td className="px-4 py-3.5 hidden md:table-cell">
+                        <p className="text-sm text-gray-600 max-w-[180px] truncate">{order.receiverAddress}</p>
+                      </td>
+                      <td className="px-4 py-3.5 hidden lg:table-cell">
+                        <span className={`text-sm font-medium ${order.codAmount > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+                          {order.codAmount > 0 ? formatCurrency(order.codAmount) : '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 hidden lg:table-cell">
+                        <span className="text-sm text-gray-700">{formatCurrency(order.shippingFee)}</span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 hidden sm:table-cell">
+                        <span className="text-xs text-gray-500">{formatDate(order.createdAt)}</span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <Link href={`/orders/${order.id}`}
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
+                          <Eye size={13} /> Xem
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filtered.length > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">
+              Hiển thị {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} / {filtered.length} đơn
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                    p === page
+                      ? 'bg-blue-600 text-white'
+                      : 'border border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+    </div>
+  )
+}
