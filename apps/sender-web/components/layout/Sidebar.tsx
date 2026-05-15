@@ -11,11 +11,11 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard',  label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/orders',     label: 'Đơn hàng',    icon: Package },
-  { href: '/orders/new', label: 'Tạo đơn mới', icon: PackagePlus },
-  { href: '/wallet',     label: 'Ví của tôi',  icon: Wallet },
-  { href: '/settings',   label: 'Cài đặt',     icon: Settings },
+  { href: '/dashboard',   label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/orders',      label: 'Đơn hàng',     icon: Package },
+  { href: '/orders/new',  label: 'Tạo đơn mới',  icon: PackagePlus },
+  { href: '/wallet',      label: 'Ví của tôi',   icon: Wallet },
+  { href: '/settings',    label: 'Cài đặt',      icon: Settings },
 ]
 
 export default function Sidebar() {
@@ -24,11 +24,13 @@ export default function Sidebar() {
   return (
     <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col">
       <div className="h-14 flex items-center px-5 border-b border-gray-200">
-        <span className="font-bold text-blue-600 text-lg tracking-tight">ShipNow</span>
+        <Link href="/dashboard">
+          <span className="font-bold text-blue-600 text-lg tracking-tight">ShipNow</span>
+        </Link>
       </div>
       <nav className="flex-1 p-3 flex flex-col gap-1">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href
+          const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
           return (
             <Link
               key={href}
