@@ -1,0 +1,26 @@
+name: Notify
+
+on:
+  workflow_run:
+    workflows: ["CI", "CD Staging", "CD Production"]
+    types: [completed]
+
+jobs:
+  notify:
+    name: Notify team
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify success
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        run: |
+          echo "✅ Workflow ${{ github.event.workflow_run.name }} passed"
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Commit: ${{ github.event.workflow_run.head_sha }}"
+
+      - name: Notify failure
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        run: |
+          echo "❌ Workflow ${{ github.event.workflow_run.name }} failed"
+          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Commit: ${{ github.event.workflow_run.head_sha }}"
