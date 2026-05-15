@@ -9,7 +9,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-// ---- Types (dùng tạm, sau sẽ import từ @picbox/types) ----
+// ---- Types ----
 type OrderStatus =
   | 'pending' | 'confirmed' | 'picked_up' | 'in_transit'
   | 'at_hub' | 'sorting' | 'out_for_delivery'
@@ -30,7 +30,7 @@ interface Order {
 
 // ---- Mock data ----
 const mockOrders: Order[] = [
-  { id: '1', trackingCode: 'PB001234', receiverName: 'Nguyễn Văn A', receiverPhone: '0901234567', receiverAddress: 'Quận 1, TP.HCM', weight: 1.5, codAmount: 250000, shippingFee: 30000, status: 'delivering' as OrderStatus, createdAt: '2026-05-15T08:00:00Z' },
+  { id: '1', trackingCode: 'PB001234', receiverName: 'Nguyễn Văn A', receiverPhone: '0901234567', receiverAddress: 'Quận 1, TP.HCM', weight: 1.5, codAmount: 250000, shippingFee: 30000, status: 'out_for_delivery' as OrderStatus, createdAt: '2026-05-15T08:00:00Z' },
   { id: '2', trackingCode: 'PB001235', receiverName: 'Trần Thị B', receiverPhone: '0912345678', receiverAddress: 'Quận 3, TP.HCM', weight: 0.5, codAmount: 0, shippingFee: 20000, status: 'delivered', createdAt: '2026-05-15T07:30:00Z' },
   { id: '3', trackingCode: 'PB001236', receiverName: 'Lê Văn C', receiverPhone: '0923456789', receiverAddress: 'Bình Thạnh, TP.HCM', weight: 2.0, codAmount: 500000, shippingFee: 35000, status: 'pending', createdAt: '2026-05-15T07:00:00Z' },
   { id: '4', trackingCode: 'PB001237', receiverName: 'Phạm Thị D', receiverPhone: '0934567890', receiverAddress: 'Gò Vấp, TP.HCM', weight: 3.0, codAmount: 150000, shippingFee: 40000, status: 'returned', createdAt: '2026-05-14T15:00:00Z' },
@@ -42,20 +42,20 @@ const mockOrders: Order[] = [
   { id: '10', trackingCode: 'PB001243', receiverName: 'Dương Thị K', receiverPhone: '0990123456', receiverAddress: 'Thủ Đức, TP.HCM', weight: 0.3, codAmount: 180000, shippingFee: 18000, status: 'failed', createdAt: '2026-05-13T11:00:00Z' },
 ]
 
-// ---- Status config ----
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending:          { label: 'Chờ xác nhận',   color: 'bg-gray-100 text-gray-600' },
-  confirmed:        { label: 'Đã xác nhận',     color: 'bg-blue-100 text-blue-700' },
-  picked_up:        { label: 'Đã lấy hàng',     color: 'bg-indigo-100 text-indigo-700' },
-  in_transit:       { label: 'Đang vận chuyển', color: 'bg-purple-100 text-purple-700' },
-  at_hub:           { label: 'Tại bưu cục',     color: 'bg-orange-100 text-orange-700' },
-  sorting:          { label: 'Đang phân loại',  color: 'bg-yellow-100 text-yellow-700' },
-  out_for_delivery: { label: 'Đang giao',       color: 'bg-cyan-100 text-cyan-700' },
-  delivering:       { label: 'Đang giao',       color: 'bg-cyan-100 text-cyan-700' },
-  delivered:        { label: 'Đã giao',         color: 'bg-green-100 text-green-700' },
-  failed:           { label: 'Giao thất bại',   color: 'bg-red-100 text-red-700' },
-  returned:         { label: 'Hoàn hàng',       color: 'bg-rose-100 text-rose-700' },
-  cancelled:        { label: 'Đã hủy',          color: 'bg-gray-100 text-gray-400' },
+// ---- Status config (TikTok Shop Style) ----
+const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
+  pending:          { label: 'Chờ xác nhận',   color: 'bg-gray-100 text-gray-500',     dot: 'bg-gray-400' },
+  confirmed:        { label: 'Đã xác nhận',     color: 'bg-blue-50 text-blue-600',      dot: 'bg-blue-500' },
+  picked_up:        { label: 'Đã lấy hàng',     color: 'bg-violet-50 text-violet-600',  dot: 'bg-violet-500' },
+  in_transit:       { label: 'Đang vận chuyển', color: 'bg-violet-50 text-violet-600',  dot: 'bg-violet-500' },
+  at_hub:           { label: 'Tại bưu cục',     color: 'bg-orange-50 text-orange-600',  dot: 'bg-orange-400' },
+  sorting:          { label: 'Đang phân loại',  color: 'bg-orange-50 text-orange-600',  dot: 'bg-orange-400' },
+  out_for_delivery: { label: 'Đang giao',       color: 'bg-cyan-50 text-cyan-600',      dot: 'bg-cyan-500' },
+  delivering:       { label: 'Đang giao',       color: 'bg-cyan-50 text-cyan-600',      dot: 'bg-cyan-500' },
+  delivered:        { label: 'Đã giao',         color: 'bg-green-50 text-green-600',    dot: 'bg-green-500' },
+  failed:           { label: 'Giao thất bại',   color: 'bg-red-50 text-red-500',        dot: 'bg-red-400' },
+  returned:         { label: 'Hoàn hàng',       color: 'bg-amber-50 text-amber-600',    dot: 'bg-amber-400' },
+  cancelled:        { label: 'Đã hủy',          color: 'bg-gray-100 text-gray-400',     dot: 'bg-gray-300' },
 }
 
 const STATUS_FILTERS = [
@@ -91,10 +91,8 @@ export default function OrdersPage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
-  // Fix: reset page khi filter thay đổi để tránh lỗi trang trống
   useEffect(() => { setPage(1) }, [search, statusFilter, dateFrom, dateTo])
 
-  // Filter
   const filtered = mockOrders
     .filter(o => {
       const matchSearch =
@@ -111,7 +109,6 @@ export default function OrdersPage() {
       return sortDir === 'desc' ? diff : -diff
     })
 
-  // Pagination
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
@@ -126,7 +123,6 @@ export default function OrdersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-gray-400">
         <Link
@@ -158,7 +154,6 @@ export default function OrdersPage() {
       {/* Search + Filter bar */}
       <div className="flex flex-col gap-4">
         <div className="flex gap-2">
-          {/* Search */}
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -170,7 +165,6 @@ export default function OrdersPage() {
             />
           </div>
 
-          {/* Filter button */}
           <button
             onClick={() => setShowFilter(!showFilter)}
             className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 border rounded-lg text-sm font-medium transition-colors ${
@@ -188,7 +182,6 @@ export default function OrdersPage() {
             )}
           </button>
 
-          {/* Sort */}
           <button
             onClick={() => { setSortDir(d => d === 'desc' ? 'asc' : 'desc'); setPage(1) }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 border border-gray-200 bg-white rounded-lg text-sm text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
@@ -243,7 +236,7 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* Status tab — dạng tab gạch chân, không dùng pill */}
+        {/* Status tab */}
         <div className="flex gap-0 border-b border-gray-200 overflow-x-auto">
           {STATUS_FILTERS.slice(0, 6).map(f => (
             <button
@@ -286,7 +279,7 @@ export default function OrdersPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {paginated.map(order => {
-                  const status = STATUS_CONFIG[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-500' }
+                  const status = STATUS_CONFIG[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' }
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3.5">
@@ -310,7 +303,9 @@ export default function OrdersPage() {
                         <span className="text-sm text-gray-700">{formatCurrency(order.shippingFee)}</span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                        {/* New Status Badge Design */}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                           {status.label}
                         </span>
                       </td>
@@ -369,7 +364,6 @@ export default function OrdersPage() {
           </div>
         )}
       </div>
-
     </div>
   )
 }
