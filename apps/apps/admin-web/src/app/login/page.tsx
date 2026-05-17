@@ -82,15 +82,15 @@ export default function LoginPage() {
   /* ── Input field helper ── */
   function inputClass(focused: boolean, hasError: boolean) {
     return [
-      "w-full h-12 rounded-2xl pl-11 pr-4",
-      "bg-white/[0.04] text-[14px] text-white placeholder-slate-600",
+      "w-full h-[56px] rounded-2xl pl-12 pr-4 tracking-wide leading-[1.8]",
+      "bg-white/[0.04] text-[15px] text-white placeholder-slate-600",
       "outline-none transition-all duration-300",
       "border",
       hasError
         ? "border-rose-500/50 shadow-[0_0_0_3px_rgba(239,68,68,0.12)]"
         : focused
-        ? "border-violet-500/60 shadow-[0_0_0_3px_rgba(139,92,246,0.15)] bg-white/[0.06]"
-        : "border-white/[0.08] hover:border-white/[0.14]",
+          ? "border-violet-500/60 shadow-[0_0_0_3px_rgba(139,92,246,0.15)] bg-white/[0.06]"
+          : "border-white/[0.08] hover:border-white/[0.14]",
     ].join(" ");
   }
 
@@ -199,10 +199,10 @@ export default function LoginPage() {
         {/* ── Login Card ── */}
         <div
           ref={cardRef}
-          className={`card-enter relative z-10 w-full max-w-[420px] mx-4 ${shake ? "shake" : ""}`}
+          className={`card-enter relative z-10 w-full max-w-[480px] mx-4 ${shake ? "shake" : ""}`}
         >
           <div
-            className="rounded-3xl p-8"
+            className="rounded-[2rem] px-8 py-12"
             style={{
               background: "rgba(10, 14, 35, 0.75)",
               backdropFilter: "blur(24px)",
@@ -210,51 +210,54 @@ export default function LoginPage() {
               border: "1px solid rgba(255,255,255,0.09)",
               boxShadow:
                 "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.06), 0 0 60px -20px rgba(139,92,246,0.25)",
+              paddingLeft: "32px",
+              paddingRight: "32px",
+              paddingTop: "48px",
+              paddingBottom: "48px",
             }}
           >
             {/* ── Logo ── */}
-            <div className="flex flex-col items-center mb-10">
+            <div className="flex flex-col items-center mb-12">
               <div
-                className="flex h-[64px] w-[64px] items-center justify-center rounded-2xl mb-5"
+                className="flex h-[72px] w-[72px] items-center justify-center rounded-2xl mb-6"
                 style={{
                   background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%)",
                   boxShadow: "0 8px 32px -4px rgba(139,92,246,0.5), 0 0 0 1px rgba(255,255,255,0.08)",
                 }}
               >
-                <Package size={28} className="text-white" />
+                <Package size={32} className="text-white" />
               </div>
-              <h1 className="text-[22px] font-bold text-white tracking-tight">Chào mừng trở lại</h1>
-              <p className="text-[13px] text-slate-500 mt-1.5">Đăng nhập vào PicBox Admin</p>
+              <h1 className="text-[26px] font-bold text-white tracking-tight leading-snug">Chào mừng trở lại</h1>
+              <p className="text-[15px] text-slate-400 mt-3 tracking-wide leading-[1.8]">Đăng nhập vào PicBox Admin</p>
             </div>
 
             {/* ── Error banner ── */}
             {error && (
               <div
-                className="error-slide mb-5 rounded-xl px-4 py-3 flex items-start gap-2.5"
+                className="error-slide mb-6 rounded-xl px-5 py-4 flex items-start gap-3"
                 style={{
                   background: "rgba(239,68,68,0.07)",
                   border: "1px solid rgba(239,68,68,0.18)",
                 }}
               >
-                <span className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400 text-[10px] font-bold">!</span>
-                <p className="text-[13px] text-rose-400 leading-relaxed">{error}</p>
+                <span className="mt-0.5 flex-shrink-0 h-5 w-5 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400 text-[12px] font-bold">!</span>
+                <p className="text-[14px] text-rose-400 leading-relaxed tracking-wide">{error}</p>
               </div>
             )}
 
             {/* ── Form ── */}
-            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            <form onSubmit={handleSubmit} noValidate>
 
               {/* Email / Username */}
-              <div className="space-y-1.5">
-                <label className="block text-[12px] font-semibold text-slate-400 tracking-wide uppercase">
+              <div style={{ marginBottom: "24px" }}>
+                <label className="block text-[13px] font-semibold text-[#E2E8F0] tracking-[0.08em] uppercase leading-relaxed mb-2">
                   Tài khoản
                 </label>
                 <div className="relative">
                   <Mail
-                    size={15}
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                      emailFocused ? "text-violet-400" : hasError ? "text-rose-400/60" : "text-slate-600"
-                    }`}
+                    size={18}
+                    className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${emailFocused ? "text-violet-400" : hasError ? "text-rose-400/60" : "text-slate-500"
+                      }`}
                   />
                   <input
                     id="login-email"
@@ -265,24 +268,24 @@ export default function LoginPage() {
                     onBlur={() => setEmailFocused(false)}
                     placeholder="admin"
                     required
+                    autoFocus
                     autoComplete="username"
                     className={inputClass(emailFocused, hasError)}
-                    style={{ paddingLeft: "2.75rem" }}
+                    style={{ paddingLeft: "54px", paddingRight: "16px" }}
                   />
                 </div>
               </div>
 
               {/* Password */}
-              <div className="space-y-1.5">
-                <label className="block text-[12px] font-semibold text-slate-400 tracking-wide uppercase">
+              <div>
+                <label className="block text-[13px] font-semibold text-[#E2E8F0] tracking-[0.08em] uppercase leading-relaxed mb-2">
                   Mật khẩu
                 </label>
                 <div className="relative">
                   <Lock
-                    size={15}
-                    className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                      passFocused ? "text-violet-400" : hasError ? "text-rose-400/60" : "text-slate-600"
-                    }`}
+                    size={18}
+                    className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${passFocused ? "text-violet-400" : hasError ? "text-rose-400/60" : "text-slate-500"
+                      }`}
                   />
                   <input
                     id="login-password"
@@ -295,43 +298,55 @@ export default function LoginPage() {
                     required
                     autoComplete="current-password"
                     className={inputClass(passFocused, hasError)}
-                    style={{ paddingLeft: "2.75rem", paddingRight: "3rem" }}
+                    style={{ paddingLeft: "54px", paddingRight: "54px" }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass((v) => !v)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300 transition-colors duration-200 cursor-pointer"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors duration-200 cursor-pointer flex items-center justify-center w-6 h-6"
                     tabIndex={-1}
                   >
-                    {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                    <EyeOff size={18} className={`absolute transition-all duration-300 ${showPass ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 -rotate-90"}`} />
+                    <Eye size={18} className={`absolute transition-all duration-300 ${!showPass ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-50 rotate-90"}`} />
                   </button>
                 </div>
               </div>
 
               {/* Remember + Forgot */}
-              <div className="flex items-center justify-between pt-0.5">
-                <label className="flex items-center gap-2 cursor-pointer group select-none">
+              <div className="flex items-center justify-between" style={{ marginTop: "16px", marginBottom: "24px" }}>
+                <label className="flex items-center gap-2.5 cursor-pointer group select-none">
                   <div
                     onClick={() => setRemember((v) => !v)}
-                    className={`h-4 w-4 rounded-[5px] border flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                      remember
-                        ? "bg-violet-500 border-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]"
-                        : "bg-transparent border-white/[0.15] hover:border-violet-500/50"
-                    }`}
+                    className={`h-4 w-4 rounded border flex items-center justify-center transition-all duration-200 cursor-pointer ${remember
+                      ? "bg-violet-500 border-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]"
+                      : "bg-transparent border-white/[0.2] group-hover:border-violet-500/50"
+                      }`}
                   >
                     {remember && (
-                      <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 12 12" fill="none">
-                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        className="h-2.5 w-2.5 text-white"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 6l3 3 5-5"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </div>
-                  <span className="text-[12px] text-slate-500 group-hover:text-slate-400 transition-colors">
+
+                  <span className="text-[14px] leading-[18px] tracking-wide text-[#A3AED0] group-hover:text-white transition-colors translate-y-[2px]">
                     Ghi nhớ đăng nhập
                   </span>
                 </label>
+
                 <a
-                  href="#"
-                  className="text-[12px] text-violet-400 hover:text-violet-300 transition-colors"
+                  href="/forgot-password"
+                  className="text-[14px] leading-[18px] font-medium tracking-wide text-violet-300 hover:text-white transition-colors translate-y-[2px]"
                 >
                   Quên mật khẩu?
                 </a>
@@ -341,9 +356,11 @@ export default function LoginPage() {
               <button
                 id="login-submit"
                 type="submit"
-                disabled={loading}
-                className="w-full h-12 rounded-2xl text-white text-[14px] font-semibold flex items-center justify-center gap-2.5 cursor-pointer select-none mt-2"
+                disabled={loading || !email || !password}
+                className="w-full rounded-2xl text-white text-[15px] font-semibold tracking-wide flex items-center justify-center gap-2.5 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
+                  paddingTop: "14px",
+                  paddingBottom: "14px",
                   background: loading
                     ? "linear-gradient(135deg, #4c1d95 0%, #312e81 100%)"
                     : "linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #3b82f6 100%)",
@@ -355,16 +372,16 @@ export default function LoginPage() {
                   opacity: loading ? 0.75 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading) (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.03)";
+                  if (!loading && email && password) (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)";
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
                 }}
                 onMouseDown={(e) => {
-                  if (!loading) (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.97)";
+                  if (!loading && email && password) (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.98)";
                 }}
                 onMouseUp={(e) => {
-                  if (!loading) (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.03)";
+                  if (!loading && email && password) (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.02)";
                 }}
               >
                 {loading ? (
@@ -375,68 +392,19 @@ export default function LoginPage() {
                 ) : (
                   <>
                     <span>Đăng nhập</span>
-                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                   </>
                 )}
               </button>
             </form>
 
-            {/* ── Divider ── */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
-              </div>
-              <div className="relative flex justify-center">
-                <span
-                  className="px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-700"
-                  style={{ background: "rgba(10,14,35,0.75)" }}
-                >
-                  Demo Account
-                </span>
-              </div>
-            </div>
-
-            {/* ── Demo hint ── */}
-            <div
-              className="rounded-2xl px-4 py-3.5"
-              style={{
-                background: "rgba(99,102,241,0.05)",
-                border: "1px solid rgba(99,102,241,0.12)",
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck size={13} className="text-indigo-400" />
-                <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Thông tin thử nghiệm</span>
-              </div>
-              <div className="flex items-center gap-3 text-[12px] text-slate-400 flex-wrap">
-                <span>
-                  Tài khoản:{" "}
-                  <code
-                    className="text-indigo-300 font-mono rounded px-1.5 py-0.5 text-[11px]"
-                    style={{ background: "rgba(99,102,241,0.12)" }}
-                  >
-                    admin
-                  </code>
-                </span>
-                <span className="text-slate-700">•</span>
-                <span>
-                  Mật khẩu:{" "}
-                  <code
-                    className="text-indigo-300 font-mono rounded px-1.5 py-0.5 text-[11px]"
-                    style={{ background: "rgba(99,102,241,0.12)" }}
-                  >
-                    123456
-                  </code>
-                </span>
-              </div>
-            </div>
-
-            {/* ── Footer ── */}
-            <p className="text-center text-[11px] text-slate-700 mt-6">
-              © {new Date().getFullYear()} PicBox Delivery System. All rights reserved.
-            </p>
           </div>
         </div>
+
+        {/* ── Footer ── */}
+        <p className="absolute bottom-6 left-0 right-0 text-center text-[13px] tracking-wide text-slate-500">
+          © {new Date().getFullYear()} PicBox Delivery System. All rights reserved.
+        </p>
       </div>
     </>
   );
