@@ -213,19 +213,39 @@ const MOCK_ORDERS: Record<string, OrderData> = {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending:          { label: 'Chờ xác nhận',     color: 'bg-gray-100 text-gray-600',    icon: Clock },
-  confirmed:        { label: 'Đã xác nhận',       color: 'bg-blue-100 text-blue-700',    icon: CheckCircle },
-  picked_up:        { label: 'Đã lấy hàng',       color: 'bg-indigo-100 text-indigo-700',icon: Package },
-  in_transit:       { label: 'Đang vận chuyển',   color: 'bg-purple-100 text-purple-700',icon: Truck },
-  at_hub:           { label: 'Tại bưu cục',       color: 'bg-orange-100 text-orange-700',icon: Package },
-  sorting:          { label: 'Đang phân loại',    color: 'bg-yellow-100 text-yellow-700',icon: Package },
-  out_for_delivery: { label: 'Đang giao',         color: 'bg-cyan-100 text-cyan-700',    icon: Truck },
-  delivering:       { label: 'Đang giao',         color: 'bg-cyan-100 text-cyan-700',    icon: Truck },
-  delivered:        { label: 'Đã giao',           color: 'bg-green-100 text-green-700',  icon: CheckCircle },
-  failed:           { label: 'Giao thất bại',     color: 'bg-red-100 text-red-700',      icon: XCircle },
-  returned:         { label: 'Hoàn hàng',         color: 'bg-rose-100 text-rose-700',    icon: RotateCcw },
-  cancelled:        { label: 'Đã huỷ',            color: 'bg-gray-100 text-gray-400',    icon: XCircle },
+  pending:          { label: 'Chờ xác nhận',   color: 'bg-amber-100 text-amber-700',   icon: Clock },
+  confirmed:        { label: 'Đã xác nhận',     color: 'bg-blue-100 text-blue-700',     icon: CheckCircle },
+  picked_up:        { label: 'Đã lấy hàng',     color: 'bg-indigo-100 text-indigo-700', icon: Package },
+  in_transit:       { label: 'Đang vận chuyển', color: 'bg-purple-100 text-purple-700', icon: Truck },
+  at_hub:           { label: 'Tại bưu cục',     color: 'bg-purple-100 text-purple-700', icon: Package },
+  sorting:          { label: 'Đang phân loại',  color: 'bg-yellow-100 text-yellow-700', icon: Package },
+  out_for_delivery: { label: 'Đang giao',       color: 'bg-blue-100 text-blue-700',     icon: Truck },
+  delivering:       { label: 'Đang giao',       color: 'bg-blue-100 text-blue-700',     icon: Truck },
+  delivered:        { label: 'Đã giao',         color: 'bg-green-100 text-green-700',   icon: CheckCircle },
+  failed:           { label: 'Giao thất bại',   color: 'bg-red-100 text-red-700',       icon: XCircle },
+  returned:         { label: 'Hoàn hàng',  color: 'bg-rose-100 text-rose-700',    icon: RotateCcw },
+  cancelled:        { label: 'Đã huỷ',          color: 'bg-gray-100 text-gray-500',    icon: XCircle },
 }
+
+// ── Màu dot + icon cho từng bước timeline ────────────────────────────
+const TIMELINE_DOT: Record<string, {
+  dot: string; icon: React.ElementType; iconColor: string; textColor: string
+}> = {
+  confirmed:        { dot: 'bg-blue-100 ring-2 ring-blue-200',        icon: CheckCircle, iconColor: 'text-blue-600',   textColor: 'text-blue-700'   },
+  picked_up:        { dot: 'bg-indigo-500 shadow-md shadow-indigo-200',icon: Package,     iconColor: 'text-white',      textColor: 'text-indigo-700' },
+  at_hub:           { dot: 'bg-purple-500 shadow-md shadow-purple-200',icon: Package,     iconColor: 'text-white',      textColor: 'text-purple-700' },
+  sorting:          { dot: 'bg-yellow-400 shadow-md shadow-yellow-200',icon: Package,     iconColor: 'text-white',      textColor: 'text-yellow-700' },
+  in_transit:       { dot: 'bg-purple-500 shadow-md shadow-purple-200',icon: Truck,       iconColor: 'text-white',      textColor: 'text-purple-700' },
+  out_for_delivery: { dot: 'bg-blue-500 shadow-md shadow-blue-200',    icon: Truck,       iconColor: 'text-white',      textColor: 'text-blue-700'   },
+  delivering:       { dot: 'bg-blue-500 shadow-md shadow-blue-200',    icon: Truck,       iconColor: 'text-white',      textColor: 'text-blue-700'   },
+  delivered:        { dot: 'bg-green-500 shadow-md shadow-green-200',  icon: CheckCircle, iconColor: 'text-white',      textColor: 'text-green-700'  },
+  failed:           { dot: 'bg-red-500 shadow-md shadow-red-200',      icon: XCircle,     iconColor: 'text-white',      textColor: 'text-red-700'    },
+  returned:         { dot: 'bg-rose-400 shadow-md shadow-rose-200',    icon: RotateCcw,   iconColor: 'text-white',      textColor: 'text-rose-700'   },
+  cancelled:        { dot: 'bg-gray-400',                              icon: XCircle,     iconColor: 'text-white',      textColor: 'text-gray-500'   },
+  default:          { dot: 'bg-blue-100 ring-2 ring-blue-200',         icon: CheckCircle, iconColor: 'text-blue-500',   textColor: 'text-gray-700'   },
+}
+// Bước chưa tới — dot rỗng viền xám
+const PENDING_DOT = { dot: 'bg-white border-2 border-gray-200', icon: Clock, iconColor: 'text-gray-300', textColor: 'text-gray-400' }
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -337,37 +357,34 @@ export default function OrderDetailPage() {
                 <div className="relative">
                   <div className="absolute left-[15px] top-5 bottom-5 w-px bg-gray-100" />
                   <div className="flex flex-col gap-0">
-                    {order.timeline.map((event, idx) => (
-                      <div key={idx} className={`relative flex gap-4 pb-5 last:pb-0 ${!event.done ? 'opacity-35' : ''}`}>
-                        <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          event.active
-                            ? 'bg-blue-600 shadow-sm shadow-blue-200'
-                            : event.done
-                            ? 'bg-green-100'
-                            : 'bg-gray-100'
-                        }`}>
-                          {event.active
-                            ? <Truck size={14} className="text-white" />
-                            : event.done
-                            ? <CheckCircle size={14} className="text-green-600" />
-                            : <Clock size={14} className="text-gray-400" />
-                          }
-                        </div>
-                        <div className="flex-1 pt-1">
-                          <p className={`text-sm font-semibold ${event.active ? 'text-blue-700' : event.done ? 'text-gray-800' : 'text-gray-400'}`}>
-                            {event.label}
-                          </p>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            <span className="text-xs text-gray-400">{event.time}</span>
-                            {event.location && (
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
-                                <MapPin size={10} /> {event.location}
-                              </span>
-                            )}
+                    {order.timeline.map((event, idx) => {
+                      const dotCfg = event.done
+                        ? (TIMELINE_DOT[event.status] ?? TIMELINE_DOT['default'])
+                        : PENDING_DOT
+                      const DotIcon = dotCfg.icon
+                      return (
+                        <div key={idx} className="relative flex gap-4 pb-5 last:pb-0">
+                          <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dotCfg.dot}`}>
+                            <DotIcon size={14} className={dotCfg.iconColor} />
+                          </div>
+                          <div className="flex-1 pt-1">
+                            <p className={`text-sm font-semibold ${event.active ? dotCfg.textColor : event.done ? 'text-gray-800' : 'text-gray-400'}`}>
+                              {event.label}
+                            </p>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              {event.time !== '—' && (
+                                <span className="text-xs text-gray-400">{event.time}</span>
+                              )}
+                              {event.location && (
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                  <MapPin size={10} /> {event.location}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>
