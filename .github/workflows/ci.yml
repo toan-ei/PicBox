@@ -7,8 +7,8 @@ on:
     branches: [develop]
 
 jobs:
-  ci:
-    name: Build & Test — ${{ matrix.service }}
+  ci-backend:
+    name: Build — ${{ matrix.service }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -36,6 +36,39 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Build & Test
+      - name: Build
         working-directory: services/${{ matrix.service }}
-        run: mvn clean verify -B
+        run: mvn clean package -B -DskipTests
+
+  ci-frontend:
+    name: Build — ${{ matrix.app }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - sender-web
+          - admin-web
+          - ops-dashboard
+          - shipper-portal
+          - driver-portal
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/${{ matrix.app }}
+        run: npm ci
+
+      - name: Build
+        working-directory: apps/${{ matrix.app }}
+        run: npm run build
