@@ -14,16 +14,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - gateway-api
-          - identity-service
-          - profile-service
-          - order-service
-          - payment-service
-          - tracking-service
-          - notification-service
-          - hub-and-branch-service
-          - staff-service
+        include:
+          - service: gateway-api
+            skip_tests: true
+          - service: identity-service
+            skip_tests: true
+          - service: profile-service
+            skip_tests: true
+          - service: order-service
+            skip_tests: true
+          - service: payment-service
+            skip_tests: true
+          - service: tracking-service
+            skip_tests: false
+          - service: notification-service
+            skip_tests: true
+          - service: hub-and-branch-service
+            skip_tests: true
+          - service: staff-service
+            skip_tests: true
 
     steps:
       - name: Checkout code
@@ -36,23 +45,18 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Build
+      - name: Build & Test
         working-directory: services/${{ matrix.service }}
-        run: mvn clean package -B -DskipTests
+        run: |
+          if [ "${{ matrix.skip_tests }}" = "true" ]; then
+            mvn clean package -B -DskipTests
+          else
+            mvn clean verify -B
+          fi
 
   ci-frontend:
-    name: Build — ${{ matrix.app }}
+    name: Build frontend
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        app:
-          - sender-web
-          - admin-web
-          - ops-dashboard
-          - shipper-portal
-          - driver-portal
 
     steps:
       - name: Checkout code
@@ -63,12 +67,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+          cache-dependency-path: apps/package-lock.json
 
       - name: Install dependencies
-        working-directory: apps/${{ matrix.app }}
-        run: npm ci
+        working-directory: apps
+        run: npm install
 
-      - name: Build
-        working-directory: apps/${{ matrix.app }}
+      - name: Build all apps
+        working-directory: apps
         run: npm run build
