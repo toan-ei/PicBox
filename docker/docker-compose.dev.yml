@@ -14,7 +14,7 @@ services:
     volumes:
       - pgdata-identity:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev}"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d identity_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -33,7 +33,7 @@ services:
     volumes:
       - pgdata-order:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev}"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d order_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -52,7 +52,7 @@ services:
     volumes:
       - pgdata-payment:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev}"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d payment_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -71,7 +71,7 @@ services:
     volumes:
       - pgdata-hub:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev}"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d hub_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -90,7 +90,17 @@ services:
     volumes:
       - mongodata:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "-u",
+          "dev",
+          "-p",
+          "devpass",
+          "--eval",
+          "db.adminCommand('ping')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -106,7 +116,7 @@ services:
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devpass}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "devpass", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
