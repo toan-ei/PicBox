@@ -96,7 +96,7 @@ export default function ShipperOrdersPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm mã đơn, khách hàng..."
             className="w-full h-10 rounded-2xl pl-10 pr-4 text-[13px] text-slate-300 placeholder-slate-600 outline-none transition-all"
-            style={{ background: "rgba(8,20,40,0.8)", border: "1px solid rgba(56,189,248,0.10)", focus: undefined }}
+            style={{ background: "rgba(8,20,40,0.8)", border: "1px solid rgba(56,189,248,0.10)" }}
           />
         </div>
 
