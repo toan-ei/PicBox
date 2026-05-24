@@ -60,6 +60,19 @@ body {
   border: 1px solid rgba(51, 65, 85, 0.25);
 }
 
+.glass-card {
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  border-radius: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+  box-shadow: 0 8px 32px -8px rgba(99, 102, 241, 0.1);
+}
+
 .gradient-brand {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
 }
@@ -90,8 +103,18 @@ body {
   to { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -105,6 +128,21 @@ body {
   100% { background-position: 200% 0; }
 }
 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(99, 102, 241, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out both;
 }
@@ -113,12 +151,32 @@ body {
   animation: fadeInLeft 0.4s ease-out both;
 }
 
+.animate-fadeInScale {
+  animation: fadeInScale 0.35s ease-out both;
+}
+
 .animate-slideDown {
   animation: slideDown 0.3s ease-out both;
 }
 
+.animate-slideUp {
+  animation: slideUp 0.4s ease-out both;
+}
+
 .animate-pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-count-up {
+  animation: count-up 0.6s ease-out both;
 }
 
 /* Stagger children */
@@ -141,9 +199,54 @@ body {
 
 /* ===== Sidebar layout offset =====
    Sidebar is position:fixed so the main area needs manual margin-left on desktop.
-   256px = expanded, 72px = collapsed (must match SIDEBAR_W constants in sidebar.tsx)
+   260px = expanded, 72px = collapsed (must match SIDEBAR_W constants in sidebar.tsx)
 */
 @media (min-width: 1024px) {
-  .sidebar-main-expanded  { margin-left: 256px; }
+  .sidebar-main-expanded  { margin-left: 260px; }
   .sidebar-main-collapsed { margin-left: 72px; }
+}
+
+/* ===== Mobile responsive tables ===== */
+@media (max-width: 1023px) {
+  .responsive-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ===== Press effect ===== */
+.press-effect {
+  transition: transform 0.1s ease;
+}
+.press-effect:active {
+  transform: scale(0.98);
+}
+
+/* ===== Focus states ===== */
+:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ===== Chart bar animation ===== */
+.chart-bar {
+  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Status dot ===== */
+.status-online {
+  background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+}
+
+.status-degraded {
+  background: #fbbf24;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+}
+
+.status-offline {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
 }
