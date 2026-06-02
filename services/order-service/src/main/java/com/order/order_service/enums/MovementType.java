@@ -1,0 +1,15 @@
+package com.order.order_service.enums;
+
+public enum MovementType {
+    PICKED_UP_FROM_SENDER,
+    ARRIVED_AT_BRANCH,
+    LOADED_TO_TRUCK,
+    ARRIVED_AT_HUB,
+    SORTED_AT_HUB,
+    DISPATCHED_TO_DEST,
+    ARRIVED_AT_DEST_BRANCH,
+    HANDED_TO_SHIPPER,
+    DELIVERED_TO_RECEIVER,
+    DELIVERY_FAILED,
+    RETURNED_TO_BRANCH
+}
