@@ -166,7 +166,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
 
             {/* Right: time + notification */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <span className="text-[11px] text-slate-600 hidden sm:inline">
+              <span className="text-[11px] text-slate-600 hidden sm:inline" suppressHydrationWarning>
                 {new Date().toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })}
                 {" · "}
                 {new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}

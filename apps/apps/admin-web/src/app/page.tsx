@@ -45,13 +45,13 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent orders */}
           <div className="lg:col-span-2 rounded-2xl glass p-5 animate-fadeIn">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[15px] font-semibold text-white">Đơn hàng gần đây</h3>
-              <button className="text-[12px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-[19px] font-semibold text-white">Đơn hàng gần đây</h3>
+              <button className="text-[16px] text-indigo-400 hover:text-indigo-300 flex items-center gap-2 transition-colors cursor-pointer">
                 Xem tất cả <ArrowUpRight size={12} />
               </button>
             </div>
-            <div className="space-y-2.5">
+            <div className="space-y-3.5">
               {[
                 { id: "PB-20241201", status: "Đang giao", customer: "Nguyễn Văn A", amount: "₫125,000", time: "5 phút trước", variant: "info" as const },
                 { id: "PB-20241200", status: "Đã nhận", customer: "Trần Thị B", amount: "₫89,000", time: "12 phút trước", variant: "warning" as const },
@@ -61,21 +61,21 @@ export default function DashboardPage() {
               ].map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] p-3.5 transition-all duration-200 cursor-pointer group"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] p-3.5 transition-all duration-200 cursor-pointer group"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className="h-10 w-10 rounded-xl bg-indigo-500/[0.08] flex items-center justify-center group-hover:bg-indigo-500/[0.12] transition-colors">
-                      <Package size={16} className="text-indigo-400" />
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-indigo-500/[0.08] flex items-center justify-center group-hover:bg-indigo-500/[0.12] transition-colors">
+                      <Package size={20} className="text-indigo-400" />
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold text-white">{order.id}</p>
-                      <p className="text-[11px] text-slate-500">{order.customer}</p>
+                      <p className="text-[17px] font-semibold text-white">{order.id}</p>
+                      <p className="text-[15px] text-slate-500">{order.customer}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[13px] font-medium text-slate-300 hidden sm:block">{order.amount}</span>
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
+                    <span className="text-[17px] font-medium text-slate-300 hidden sm:block">{order.amount}</span>
                     <Badge variant={order.variant}>{order.status}</Badge>
-                    <span className="text-[11px] text-slate-600 hidden md:block w-20 text-right">{order.time}</span>
+                    <span className="text-[15px] text-slate-600 hidden md:block w-24 text-right">{order.time}</span>
                   </div>
                 </div>
               ))}
@@ -84,8 +84,8 @@ export default function DashboardPage() {
 
           {/* System status */}
           <div className="rounded-2xl glass p-5 animate-fadeIn">
-            <h3 className="text-[15px] font-semibold text-white mb-5">Trạng thái hệ thống</h3>
-            <div className="space-y-3.5">
+            <h3 className="text-[19px] font-semibold text-white mb-6">Trạng thái hệ thống</h3>
+            <div className="space-y-4">
               {[
                 { name: "Gateway API", status: "online", uptime: "99.9%" },
                 { name: "Identity Service", status: "online", uptime: "99.8%" },
@@ -96,18 +96,18 @@ export default function DashboardPage() {
                 { name: "Kafka Cluster", status: "online", uptime: "99.9%" },
                 { name: "Redis Cache", status: "online", uptime: "100%" },
               ].map((svc) => (
-                <div key={svc.name} className="flex items-center justify-between py-0.5">
-                  <div className="flex items-center gap-2.5">
+                <div key={svc.name} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`h-2 w-2 rounded-full ${
+                      className={`h-2.5 w-2.5 rounded-full ${
                         svc.status === "online"
                           ? "bg-emerald-400 shadow-sm shadow-emerald-400/40"
                           : "bg-amber-400 shadow-sm shadow-amber-400/40 animate-pulse"
                       }`}
                     />
-                    <span className="text-[13px] text-slate-300">{svc.name}</span>
+                    <span className="text-[17px] text-slate-300">{svc.name}</span>
                   </div>
-                  <span className="text-[11px] text-slate-600 font-mono">{svc.uptime}</span>
+                  <span className="text-[15px] text-slate-600 font-mono">{svc.uptime}</span>
                 </div>
               ))}
             </div>
