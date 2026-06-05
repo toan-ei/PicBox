@@ -62,8 +62,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         <div className="hidden sm:block">
-          <h1 className="text-[15px] font-semibold text-white">{pageTitle}</h1>
-          <p className="text-[11px] text-slate-500 mt-0.5">
+          <h1 className="text-[19px] font-semibold text-white">{pageTitle}</h1>
+          <p className="text-[15px] text-slate-500 mt-0.5" suppressHydrationWarning>
             {new Date().toLocaleDateString("vi-VN", {
               weekday: "long",
               year: "numeric",
@@ -76,15 +76,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
       {/* Center: Search */}
       <div className={`hidden md:flex items-center flex-1 max-w-md mx-4 relative transition-all duration-200 ${searchFocused ? "max-w-lg" : ""}`}>
-        <Search size={15} className="absolute left-3 text-slate-500" />
+        <Search size={19} className="absolute left-3 text-slate-500" />
         <input
           type="text"
           placeholder="Tìm kiếm đơn hàng, người dùng..."
-          className="w-full h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] pl-9 pr-4 text-sm text-slate-300 placeholder-slate-600 outline-none transition-all focus:border-indigo-500/40 focus:bg-white/[0.06] focus:ring-1 focus:ring-indigo-500/20"
+          className="w-full h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] pl-11 pr-4 text-base text-slate-300 placeholder-slate-600 outline-none transition-all focus:border-indigo-500/40 focus:bg-white/[0.06] focus:ring-1 focus:ring-indigo-500/20"
           onFocus={() => setSearchFocused(true)}
           onBlur={() => setSearchFocused(false)}
         />
-        <kbd className="absolute right-3 hidden lg:inline-flex items-center gap-0.5 text-[10px] text-slate-600 bg-white/[0.04] border border-white/[0.08] rounded px-1.5 py-0.5 font-mono">
+        <kbd className="absolute right-3 hidden lg:inline-flex items-center gap-0.5 text-[14px] text-slate-600 bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1 font-mono">
           ⌘K
         </kbd>
       </div>
@@ -92,9 +92,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
       {/* Right */}
       <div className="flex items-center gap-2">
         {/* Notification */}
-        <button className="relative flex items-center justify-center h-9 w-9 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer">
-          <Bell size={17} />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[#050a18] animate-pulse-dot" />
+        <button className="relative flex items-center justify-center h-11 w-11 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer">
+          <Bell size={21} />
+          <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-[#050a18] animate-pulse-dot" />
         </button>
 
         {/* Divider */}
@@ -104,14 +104,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <div ref={dropdownRef} className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-white/[0.04] transition-all cursor-pointer"
+            className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-white/[0.04] transition-all cursor-pointer"
           >
-            <div className="h-8 w-8 rounded-lg gradient-brand flex items-center justify-center text-xs font-bold text-white shadow-md shadow-indigo-500/20">
+            <div className="h-10 w-10 rounded-lg gradient-brand flex items-center justify-center text-[15px] font-bold text-white shadow-md shadow-indigo-500/20">
               A
             </div>
             <div className="hidden sm:block text-left">
-              <p className="text-[13px] font-medium text-slate-200 leading-tight">Admin</p>
-              <p className="text-[11px] text-slate-500 leading-tight">Super Admin</p>
+              <p className="text-[17px] font-medium text-slate-200 leading-tight">Admin</p>
+              <p className="text-[15px] text-slate-500 leading-tight">Super Admin</p>
             </div>
             <ChevronDown
               size={14}
@@ -123,8 +123,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
           {dropdownOpen && (
             <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-white/[0.08] bg-[#0c1225]/95 backdrop-blur-xl shadow-2xl shadow-black/40 py-2 animate-slideDown">
               <div className="px-4 py-3 border-b border-white/[0.06]">
-                <p className="text-sm font-medium text-white">Admin</p>
-                <p className="text-xs text-slate-500">admin@picbox.vn</p>
+                <p className="text-base font-medium text-white">Admin</p>
+                <p className="text-sm text-slate-500">admin@picbox.vn</p>
               </div>
               <div className="py-1.5">
                 {[
@@ -133,7 +133,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 ].map((item) => (
                   <button
                     key={item.label}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-[13px] text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-[16px] text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
                   >
                     {item.icon}
                     {item.label}
@@ -141,8 +141,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 ))}
               </div>
               <div className="border-t border-white/[0.06] pt-1.5">
-                <button className="flex items-center gap-3 w-full px-4 py-2 text-[13px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/[0.06] transition-colors cursor-pointer">
-                  <LogOut size={14} />
+                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-[16px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/[0.06] transition-colors cursor-pointer">
+                  <LogOut size={18} />
                   Đăng xuất
                 </button>
               </div>

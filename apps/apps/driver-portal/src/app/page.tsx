@@ -89,7 +89,7 @@ export default function DriverDashboard() {
             <h1 className="text-[20px] font-bold text-white">Đặng Văn Driver 🚚</h1>
           </div>
           <div className="text-right">
-            <p className="text-[11px] text-slate-600">
+            <p className="text-[11px] text-slate-600" suppressHydrationWarning>
               {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}
             </p>
             <div className="flex items-center gap-1.5 justify-end mt-0.5">

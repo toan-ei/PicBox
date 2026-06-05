@@ -137,19 +137,18 @@ export default function AnalyticsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-white">Thống kê & Báo cáo</h1>
-            <p className="text-[13px] text-slate-500 mt-0.5">Phân tích hiệu suất vận hành hệ thống PicBox</p>
+            <h1 className="text-2xl font-bold text-white">Thống kê & Báo cáo</h1>
+            <p className="text-[17px] text-slate-500 mt-1">Phân tích hiệu suất vận hành hệ thống PicBox</p>
           </div>
           <div className="flex gap-1.5">
             {(["week", "month", "year"] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all cursor-pointer border ${
-                  period === p
-                    ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/25"
-                    : "bg-white/[0.02] text-slate-500 border-white/[0.06] hover:bg-white/[0.04]"
-                }`}
+                className={`px-4 py-2 rounded-lg text-[16px] font-medium transition-all cursor-pointer border ${period === p
+                  ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/25"
+                  : "bg-white/[0.02] text-slate-500 border-white/[0.06] hover:bg-white/[0.04]"
+                  }`}
               >
                 {p === "week" ? "Tuần" : p === "month" ? "Tháng" : "Năm"}
               </button>
@@ -167,13 +166,13 @@ export default function AnalyticsPage() {
                   <div className={`h-10 w-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
                     <Icon size={18} className={kpi.color} />
                   </div>
-                  <span className={`text-[12px] font-semibold flex items-center gap-0.5 ${kpi.up ? "text-emerald-400" : "text-rose-400"}`}>
-                    {kpi.up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  <span className={`text-[16px] font-semibold flex items-center gap-1 ${kpi.up ? "text-emerald-400" : "text-rose-400"}`}>
+                    {kpi.up ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                     {kpi.change}
                   </span>
                 </div>
-                <p className="text-[26px] font-bold text-white leading-none">{kpi.value}</p>
-                <p className="text-[11px] text-slate-500 mt-1.5">{kpi.label}</p>
+                <p className="text-[30px] font-bold text-white leading-none">{kpi.value}</p>
+                <p className="text-[15px] text-slate-500 mt-2">{kpi.label}</p>
               </div>
             );
           })}
@@ -185,11 +184,11 @@ export default function AnalyticsPage() {
           <div className="lg:col-span-2 glass rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-[14px] font-semibold text-white">Đơn hàng theo tháng</h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">Năm 2026</p>
+                <h3 className="text-[18px] font-semibold text-white">Đơn hàng theo tháng</h3>
+                <p className="text-[15px] text-slate-500 mt-1">Năm 2026</p>
               </div>
-              <span className="text-[12px] text-emerald-400 font-semibold flex items-center gap-1">
-                <TrendingUp size={12} /> +167.7% YTD
+              <span className="text-[16px] text-emerald-400 font-semibold flex items-center gap-1">
+                <TrendingUp size={16} /> +167.7% YTD
               </span>
             </div>
             <MiniBarChart data={ORDER_DATA} color="#6366f1" />
@@ -202,7 +201,7 @@ export default function AnalyticsPage() {
 
           {/* Order status donut */}
           <div className="glass rounded-2xl p-5">
-            <h3 className="text-[14px] font-semibold text-white mb-4">Tỷ lệ trạng thái đơn</h3>
+            <h3 className="text-[18px] font-semibold text-white mb-5">Tỷ lệ trạng thái đơn</h3>
             <DonutChart data={ORDER_STATUSES} />
           </div>
         </div>
@@ -211,11 +210,11 @@ export default function AnalyticsPage() {
         <div className="glass rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-[14px] font-semibold text-white">Doanh thu theo tháng (triệu VND)</h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">Tổng năm 2026: ₫3.92 tỷ</p>
+              <h3 className="text-[18px] font-semibold text-white">Doanh thu theo tháng (triệu VND)</h3>
+              <p className="text-[15px] text-slate-500 mt-1">Tổng năm 2026: ₫3.92 tỷ</p>
             </div>
-            <span className="text-[12px] text-emerald-400 font-semibold flex items-center gap-1">
-              <TrendingUp size={12} /> +165% vs 2025
+            <span className="text-[16px] text-emerald-400 font-semibold flex items-center gap-1">
+              <TrendingUp size={16} /> +165% vs 2025
             </span>
           </div>
           <MiniBarChart data={REVENUE_DATA} color="#34d399" />
@@ -228,27 +227,26 @@ export default function AnalyticsPage() {
 
         {/* Shipper leaderboard */}
         <div className="glass rounded-2xl p-5">
-          <h3 className="text-[14px] font-semibold text-white mb-4">Top Shipper tháng này</h3>
-          <div className="space-y-3">
+          <h3 className="text-[18px] font-semibold text-white mb-5">Top Shipper tháng này</h3>
+          <div className="space-y-4">
             {SHIPPER_PERF.map((s, i) => (
               <div key={s.name} className="flex items-center gap-4">
                 <span
-                  className={`h-7 w-7 rounded-xl flex items-center justify-center text-[12px] font-bold flex-shrink-0 ${
-                    i === 0 ? "bg-amber-500/20 text-amber-400" :
+                  className={`h-8 w-8 rounded-xl flex items-center justify-center text-[16px] font-bold flex-shrink-0 ${i === 0 ? "bg-amber-500/20 text-amber-400" :
                     i === 1 ? "bg-slate-500/20 text-slate-300" :
-                    i === 2 ? "bg-orange-500/20 text-orange-400" :
-                    "bg-white/[0.04] text-slate-600"
-                  }`}
+                      i === 2 ? "bg-orange-500/20 text-orange-400" :
+                        "bg-white/[0.04] text-slate-600"
+                    }`}
                 >
                   {i + 1}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[13px] font-medium text-white truncate">{s.name}</p>
-                    <p className="text-[12px] text-slate-400 flex-shrink-0 ml-2">{s.earnings}</p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[17px] font-medium text-white truncate">{s.name}</p>
+                    <p className="text-[16px] text-slate-400 flex-shrink-0 ml-2">{s.earnings}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 h-1.5 rounded-full bg-white/[0.06]">
+                    <div className="flex-1 h-2 rounded-full bg-white/[0.06]">
                       <div
                         className="h-full rounded-full"
                         style={{
