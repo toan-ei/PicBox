@@ -183,7 +183,7 @@ export default function SettingsPage() {
                   />
                 </div>
               ))}
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
                 <button onClick={handleSave}
                   className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
                     saved ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
           {/* Notifications */}
           {tab === 'notifications' && (
-            <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-5">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-5 overflow-hidden">
               <div>
                 <p className="text-sm font-semibold text-gray-900">Tuỳ chọn thông báo</p>
               </div>
