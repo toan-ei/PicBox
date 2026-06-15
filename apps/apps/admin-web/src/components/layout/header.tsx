@@ -128,23 +128,27 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </div>
               <div className="py-1.5">
                 {[
-                  { icon: <User size={14} />, label: "Hồ sơ cá nhân" },
-                  { icon: <Settings size={14} />, label: "Cài đặt" },
+                  { icon: <User size={14} />, label: "Hồ sơ cá nhân", href: "/profile"},
+                  { icon: <Settings size={14} />, label: "Cài đặt", href: "/settings" },
                 ].map((item) => (
-                  <button
+                  <a
                     key={item.label}
+                    href={item.href}
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-[16px] text-slate-400 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
                   >
                     {item.icon}
                     {item.label}
-                  </button>
+                  </a>
                 ))}
               </div>
               <div className="border-t border-white/[0.06] pt-1.5">
-                <button className="flex items-center gap-3 w-full px-4 py-2.5 text-[16px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/[0.06] transition-colors cursor-pointer">
+                <a
+                  href="/login"
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-[16px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/[0.06] transition-colors cursor-pointer"
+                >
                   <LogOut size={18} />
                   Đăng xuất
-                </button>
+                </a>
               </div>
             </div>
           )}

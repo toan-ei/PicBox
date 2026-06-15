@@ -1,5 +1,4 @@
 {
-  "dependencies": {
-    "lucide-react": "^1.14.0"
-  }
+  "name": "picbox-root",
+  "private": true
 }
