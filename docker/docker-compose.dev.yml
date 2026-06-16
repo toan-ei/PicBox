@@ -1,80 +1,24 @@
 version: "3.9"
 
 services:
-  # ─── PostgreSQL: identity-service ─────────────────────
-  postgres-identity:
-    image: postgres:16-alpine
-    container_name: picbox-postgres-identity
+  # ─── MySQL (shared — tất cả service dùng chung 1 instance) ──
+  mysql:
+    image: mysql:8.0
+    container_name: picbox-mysql
     environment:
-      POSTGRES_DB: identity_db
-      POSTGRES_USER: ${POSTGRES_USER:-dev}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpass}
+      MYSQL_USER: ${MYSQL_USER:-dev}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-devpass}
     ports:
-      - "5436:5432"
+      - "3306:3306"
     volumes:
-      - pgdata-identity:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d identity_db"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-devpass}"]
       interval: 5s
       timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # ─── PostgreSQL: order-service ─────────────────────────
-  postgres-order:
-    image: postgres:16-alpine
-    container_name: picbox-postgres-order
-    environment:
-      POSTGRES_DB: order_db
-      POSTGRES_USER: ${POSTGRES_USER:-dev}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata-order:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d order_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # ─── PostgreSQL: payment-service ───────────────────────
-  postgres-payment:
-    image: postgres:16-alpine
-    container_name: picbox-postgres-payment
-    environment:
-      POSTGRES_DB: payment_db
-      POSTGRES_USER: ${POSTGRES_USER:-dev}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
-    ports:
-      - "5434:5432"
-    volumes:
-      - pgdata-payment:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d payment_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # ─── PostgreSQL: hub-and-branch-service ────────────────
-  postgres-hub:
-    image: postgres:16-alpine
-    container_name: picbox-postgres-hub
-    environment:
-      POSTGRES_DB: hub_db
-      POSTGRES_USER: ${POSTGRES_USER:-dev}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
-    ports:
-      - "5435:5432"
-    volumes:
-      - pgdata-hub:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d hub_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
 
   # ─── MongoDB: tracking-service ─────────────────────────
@@ -90,17 +34,7 @@ services:
     volumes:
       - mongodata:/data/db
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mongosh",
-          "-u",
-          "dev",
-          "-p",
-          "devpass",
-          "--eval",
-          "db.adminCommand('ping')",
-        ]
+      test: ["CMD", "mongosh", "-u", "dev", "-p", "devpass", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -150,13 +84,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "kafka-broker-api-versions",
-          "--bootstrap-server",
-          "localhost:9092",
-        ]
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -180,17 +108,14 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8080:8080"
+      - "8090:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     restart: unless-stopped
 
 volumes:
-  pgdata-identity:
-  pgdata-order:
-  pgdata-payment:
-  pgdata-hub:
+  mysqldata:
   mongodata:
   redisdata:
   zkdata:

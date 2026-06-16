@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: 8082
   servlet:
     context-path: /order
 
@@ -7,18 +7,20 @@ spring:
   application:
     name: order-service
   datasource:
-    url: "jdbc:mysql://localhost:3306/order_service"
-    username: root
-    password: 1234
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/order_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:devpass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -28,17 +30,18 @@ spring:
         enable.idempotence: true
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:devpass}
       timeout: 2000ms
 
 jwt:
-  signerKey: "BcGAKAxY7nEWT4lOBlPMxo4lgdgurBlEuL5wlzxqSuUauQI5+2G6I6A6KRe38XhF"
+  signerKey: "${JWT_SIGNER_KEY:BcGAKAxY7nEWT4lOBlPMxo4lgdgurBlEuL5wlzxqSuUauQI5+2G6I6A6KRe38XhF}"
 
 feign:
   client:
     config:
       payment-service:
-        url: http://localhost:8082/payment
+        url: ${PAYMENT_SERVICE_URL:http://localhost:8083/payment}
       staff-service:
-        url: http://localhost:8083/staff
+        url: ${STAFF_SERVICE_URL:http://localhost:8085/staff}
