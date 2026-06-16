@@ -16,23 +16,23 @@ jobs:
       matrix:
         include:
           - service: gateway-api
-            skip_tests: true
+            skip_tests: false
           - service: identity-service
-            skip_tests: true
+            skip_tests: false
           - service: profile-service
-            skip_tests: true
+            skip_tests: false
           - service: order-service
-            skip_tests: true
+            skip_tests: false
           - service: payment-service
-            skip_tests: true
+            skip_tests: false
           - service: tracking-service
             skip_tests: false
           - service: notification-service
-            skip_tests: true
+            skip_tests: false
           - service: hub-and-branch-service
-            skip_tests: true
+            skip_tests: false
           - service: staff-service
-            skip_tests: true
+            skip_tests: false
 
     steps:
       - name: Checkout code
