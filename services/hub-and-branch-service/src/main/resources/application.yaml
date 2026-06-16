@@ -1,3 +1,27 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /hub
+
 spring:
   application:
     name: hub-and-branch-service
+  datasource:
+    url: "jdbc:mysql://localhost:3306/hub_branch_service"
+    username: root
+    password: 1234
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+
+jwt:
+  signerKey: "BcGAKAxY7nEWT4lOBlPMxo4lgdgurBlEuL5wlzxqSuUauQI5+2G6I6A6KRe38XhF"
