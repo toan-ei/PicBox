@@ -1,13 +1,37 @@
 version: "3.9"
 
+# ──────────────────────────────────────────────────────────────
+#  Biến môi trường dùng chung cho backend services
+# ──────────────────────────────────────────────────────────────
+x-db-env: &db-env
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_USERNAME: dev
+  DB_PASSWORD: ${MYSQL_PASSWORD:-devpass}
+
+x-kafka-env: &kafka-env
+  KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+x-redis-env: &redis-env
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-devpass}
+
+x-jwt-env: &jwt-env
+  JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-BcGAKAxY7nEWT4lOBlPMxo4lgdgurBlEuL5wlzxqSuUauQI5+2G6I6A6KRe38XhF}
+
 services:
-  # ─── MySQL (shared — tất cả service dùng chung 1 instance) ──
+
+  # ════════════════════════════════════════════════════════════
+  #  INFRASTRUCTURE
+  # ════════════════════════════════════════════════════════════
+
   mysql:
     image: mysql:8.0
     container_name: picbox-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpass}
-      MYSQL_USER: ${MYSQL_USER:-dev}
+      MYSQL_USER: dev
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-devpass}
     ports:
       - "3306:3306"
@@ -21,7 +45,6 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # ─── MongoDB: tracking-service ─────────────────────────
   mongodb:
     image: mongo:7
     container_name: picbox-mongodb
@@ -40,7 +63,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # ─── Redis ─────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: picbox-redis
@@ -50,13 +72,12 @@ services:
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "devpass", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-devpass}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
     restart: unless-stopped
 
-  # ─── Zookeeper ─────────────────────────────────────────
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: picbox-zookeeper
@@ -67,7 +88,6 @@ services:
       - zkdata:/var/lib/zookeeper/data
     restart: unless-stopped
 
-  # ─── Kafka ─────────────────────────────────────────────
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: picbox-kafka
@@ -90,7 +110,6 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # ─── Kafka Init Topics ─────────────────────────────────
   kafka-init:
     image: confluentinc/cp-kafka:7.6.0
     container_name: picbox-kafka-init
@@ -101,7 +120,6 @@ services:
       - ../infra/kafka/init-topics.sh:/init-topics.sh
     entrypoint: ["/bin/bash", "/init-topics.sh"]
 
-  # ─── Kafka UI ──────────────────────────────────────────
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: picbox-kafka-ui
@@ -112,6 +130,196 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════
+  #  BACKEND SERVICES
+  # ════════════════════════════════════════════════════════════
+
+  gateway-api:
+    build:
+      context: ../services/gateway-api
+    container_name: picbox-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - identity-service
+      - profile-service
+      - order-service
+      - payment-service
+      - tracking-service
+      - hub-and-branch-service
+      - staff-service
+    restart: unless-stopped
+
+  identity-service:
+    build:
+      context: ../services/identity-service
+    container_name: picbox-identity
+    environment:
+      <<: [*db-env, *jwt-env]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  profile-service:
+    build:
+      context: ../services/profile-service
+    container_name: picbox-profile
+    environment:
+      <<: [*db-env, *kafka-env, *jwt-env]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ../services/order-service
+    container_name: picbox-order
+    environment:
+      <<: [*db-env, *kafka-env, *redis-env, *jwt-env]
+      PAYMENT_SERVICE_URL: http://payment-service:8083/payment
+      STAFF_SERVICE_URL: http://staff-service:8085/staff
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ../services/payment-service
+    container_name: picbox-payment
+    environment:
+      <<: [*db-env, *kafka-env, *jwt-env]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  tracking-service:
+    build:
+      context: ../services/tracking-service
+    container_name: picbox-tracking
+    environment:
+      <<: [*kafka-env, *redis-env]
+      MONGO_HOST: mongodb
+      MONGO_USER: ${MONGO_USER:-dev}
+      MONGO_PASSWORD: ${MONGO_PASSWORD:-devpass}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  hub-and-branch-service:
+    build:
+      context: ../services/hub-and-branch-service
+    container_name: picbox-hub
+    environment:
+      <<: [*db-env, *redis-env, *jwt-env]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  staff-service:
+    build:
+      context: ../services/staff-service
+    container_name: picbox-staff
+    environment:
+      <<: [*db-env, *kafka-env, *redis-env, *jwt-env]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ../services/notification-service
+    container_name: picbox-notification
+    environment:
+      <<: *kafka-env
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ════════════════════════════════════════════════════════════
+  #  FRONTEND APPS
+  # ════════════════════════════════════════════════════════════
+
+  sender-web:
+    build:
+      context: ../apps
+      dockerfile: sender-web/Dockerfile
+    container_name: picbox-sender-web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    restart: unless-stopped
+
+  admin-web:
+    build:
+      context: ../apps
+      dockerfile: admin-web/Dockerfile
+    container_name: picbox-admin-web
+    ports:
+      - "3001:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    restart: unless-stopped
+
+  shipper-portal:
+    build:
+      context: ../apps
+      dockerfile: shipper-portal/Dockerfile
+    container_name: picbox-shipper-portal
+    ports:
+      - "3002:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    restart: unless-stopped
+
+  driver-portal:
+    build:
+      context: ../apps
+      dockerfile: driver-portal/Dockerfile
+    container_name: picbox-driver-portal
+    ports:
+      - "3003:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    restart: unless-stopped
+
+  ops-dashboard:
+    build:
+      context: ../apps
+      dockerfile: ops-dashboard/Dockerfile
+    container_name: picbox-ops-dashboard
+    ports:
+      - "3004:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
     restart: unless-stopped
 
 volumes:
