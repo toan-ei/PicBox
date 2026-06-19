@@ -255,9 +255,17 @@ services:
       context: ../services/notification-service
     container_name: picbox-notification
     environment:
-      <<: *kafka-env
+      <<: [*db-env, *kafka-env]
+      DB_NAME: notification_service
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
     depends_on:
       kafka:
+        condition: service_healthy
+      mysql:
         condition: service_healthy
     restart: unless-stopped
 
