@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Package, Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
+import { apiLogin } from "@picbox/utils";
 
 /* ─────────────────────────────────────────────
    Spinner component
@@ -66,15 +67,15 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 1400));
-
-    if (email === "admin" && password === "123456") {
-      localStorage.setItem("accessToken", "demo-token");
-      localStorage.setItem("user", JSON.stringify({ name: "Admin", role: "admin" }));
+    try {
+      const { token, user } = await apiLogin(email, password);
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      document.cookie = `auth_token=${token};path=/;max-age=86400`;
       router.push("/");
-    } else {
+    } catch (err: unknown) {
       setLoading(false);
-      setError("Tài khoản hoặc mật khẩu không chính xác.");
+      setError(err instanceof Error ? err.message : "Tài khoản hoặc mật khẩu không chính xác.");
       triggerShake();
     }
   }

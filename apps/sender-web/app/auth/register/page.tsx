@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
-import { mockRegister } from '@/lib/mock-auth'
+import { register } from '@/lib/auth-service'
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -76,8 +76,7 @@ export default function RegisterPage() {
     const errs = validate()
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setLoading(true)
-    await new Promise(r => setTimeout(r, 700))
-    const result = mockRegister({ name: name.trim(), email: email.trim(), phone: phone.trim(), password })
+    const result = await register({ name: name.trim(), email: email.trim(), phone: phone.trim(), password })
     if (result.ok) {
       router.push('/auth/login?registered=1')
     } else {
