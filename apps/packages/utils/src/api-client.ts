@@ -35,25 +35,25 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) {
-          throw new Error("No refresh token");
-        }
+        const currentToken = localStorage.getItem("accessToken");
+        if (!currentToken) throw new Error("No token");
 
-        const { data } = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
-          refreshToken,
+        const { data } = await axios.post(`${API_BASE_URL}/identity/auth/refreshToken`, {
+          token: currentToken,
         });
 
-        localStorage.setItem("accessToken", data.data.accessToken);
-        localStorage.setItem("refreshToken", data.data.refreshToken);
+        const newToken: string = data.result.token;
+        localStorage.setItem("accessToken", newToken);
+        document.cookie = `auth_token=${newToken};path=/;max-age=86400`;
 
-        originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        document.cookie = "auth_token=;path=/;max-age=0";
         if (typeof window !== "undefined") {
-          window.location.href = "/login";
+          window.location.href = "/auth/login";
         }
         return Promise.reject(refreshError);
       }

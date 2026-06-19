@@ -6,13 +6,6 @@ const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ─── DEV MODE: bỏ qua auth để test UI thoải mái ─────────────
-  // Xóa hoặc comment block này khi deploy production
-  if (process.env.NODE_ENV === 'development') {
-    return NextResponse.next()
-  }
-  // ─────────────────────────────────────────────────────────────
-
   const token = request.cookies.get('auth_token')?.value
 
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {

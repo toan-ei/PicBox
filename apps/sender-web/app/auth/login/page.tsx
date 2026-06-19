@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
-import { mockLogin } from '@/lib/mock-auth'
+import { login } from '@/lib/auth-service'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -22,11 +22,7 @@ export default function LoginPage() {
     if (!password.trim()) return setError('Vui lòng nhập mật khẩu')
 
     setLoading(true)
-
-    // Giả lập độ trễ network 600ms cho giống thật
-    await new Promise(r => setTimeout(r, 600))
-
-    const result = mockLogin(identifier.trim(), password)
+    const result = await login(identifier.trim(), password)
 
     if (result.ok) {
       router.push('/dashboard')
