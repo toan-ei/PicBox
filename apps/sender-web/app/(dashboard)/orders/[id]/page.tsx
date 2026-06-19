@@ -2,216 +2,19 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import {
   Home, ChevronRight, ArrowLeft, Package,
   MapPin, Phone, User, Banknote, Clock,
   CheckCircle, Truck, RotateCcw, XCircle,
-  Copy, ExternalLink, AlertCircle
+  Copy, ExternalLink, AlertCircle, Loader2
 } from 'lucide-react'
 import { ToastContainer, useToast } from '@/components/ui/toast'
+import { getOrder, getOrderHistory, cancelOrder } from '@picbox/utils'
+import type { OrderHistoryEvent } from '@picbox/utils'
+import type { Order } from '@picbox/types'
 
-// ---- Types ----
-type OrderStatus =
-  | 'pending' | 'confirmed' | 'picked_up' | 'in_transit'
-  | 'at_hub' | 'sorting' | 'out_for_delivery' | 'delivering'
-  | 'delivered' | 'failed' | 'returned' | 'cancelled'
-
-interface TimelineEvent {
-  status: string
-  label: string
-  time: string
-  location?: string
-  done: boolean
-  active: boolean
-}
-
-interface OrderData {
-  id: string
-  trackingCode: string
-  status: OrderStatus
-  createdAt: string
-  updatedAt: string
-  serviceType: string
-  estimatedDelivery: string
-  sender: { name: string; phone: string; address: string }
-  receiver: { name: string; phone: string; address: string; province: string }
-  package: { weight: number; description: string; value: number }
-  codAmount: number
-  shippingFee: number
-  paymentSide: 'sender' | 'receiver'
-  note: string
-  timeline: TimelineEvent[]
-}
-
-// ---- Mock data — đầy đủ 10 đơn (khớp với danh sách orders) ----
-const MOCK_ORDERS: Record<string, OrderData> = {
-  '1': {
-    id: '1', trackingCode: 'PB001234', status: 'out_for_delivery',
-    createdAt: '15/05/2026 08:00', updatedAt: '15/05/2026 14:30',
-    serviceType: 'Nhanh', estimatedDelivery: '15/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Nguyễn Văn A', phone: '0901234567', address: '45 Trần Hưng Đạo', province: 'Quận 5, TP.HCM' },
-    package: { weight: 1.5, description: 'Quần áo', value: 350000 },
-    codAmount: 250000, shippingFee: 35000, paymentSide: 'receiver',
-    note: 'Gọi trước khi giao',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '15/05/2026 08:05', location: 'Hệ thống', done: true, active: false },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '15/05/2026 10:20', location: 'Quận 1, TP.HCM', done: true, active: false },
-      { status: 'at_hub', label: 'Hàng đến bưu cục', time: '15/05/2026 11:45', location: 'Hub Q.1 - TP.HCM', done: true, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '15/05/2026 13:30', location: 'Quận 5, TP.HCM', done: true, active: true },
-      { status: 'delivered', label: 'Giao hàng thành công', time: '—', location: '', done: false, active: false },
-    ],
-  },
-  '2': {
-    id: '2', trackingCode: 'PB001235', status: 'delivered',
-    createdAt: '14/05/2026 09:00', updatedAt: '15/05/2026 14:30',
-    serviceType: 'Tiêu chuẩn', estimatedDelivery: '15/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Trần Thị B', phone: '0912345678', address: '22 Hai Bà Trưng', province: 'Quận 3, TP.HCM' },
-    package: { weight: 0.5, description: 'Mỹ phẩm', value: 0 },
-    codAmount: 0, shippingFee: 20000, paymentSide: 'sender',
-    note: '',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '14/05/2026 09:10', location: 'Hệ thống', done: true, active: false },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '14/05/2026 11:00', location: 'Quận 1, TP.HCM', done: true, active: false },
-      { status: 'at_hub', label: 'Hàng đến bưu cục', time: '14/05/2026 13:00', location: 'Hub Q.1 - TP.HCM', done: true, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '15/05/2026 08:00', location: 'Quận 3, TP.HCM', done: true, active: false },
-      { status: 'delivered', label: 'Giao hàng thành công', time: '15/05/2026 14:30', location: 'Quận 3, TP.HCM', done: true, active: true },
-    ],
-  },
-  '3': {
-    id: '3', trackingCode: 'PB001236', status: 'pending',
-    createdAt: '15/05/2026 07:00', updatedAt: '15/05/2026 07:05',
-    serviceType: 'Nhanh', estimatedDelivery: '16/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Lê Văn C', phone: '0923456789', address: '88 Đinh Tiên Hoàng', province: 'Bình Thạnh, TP.HCM' },
-    package: { weight: 2.0, description: 'Đồ điện tử', value: 1500000 },
-    codAmount: 500000, shippingFee: 35000, paymentSide: 'receiver',
-    note: '',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '15/05/2026 07:05', location: 'Hệ thống', done: true, active: true },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '—', location: '', done: false, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '—', location: '', done: false, active: false },
-      { status: 'delivered', label: 'Giao hàng thành công', time: '—', location: '', done: false, active: false },
-    ],
-  },
-  '4': {
-    id: '4', trackingCode: 'PB001237', status: 'returned',
-    createdAt: '14/05/2026 15:00', updatedAt: '15/05/2026 10:00',
-    serviceType: 'Tiêu chuẩn', estimatedDelivery: '15/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Phạm Thị D', phone: '0934567890', address: '15 Lê Văn Sỹ', province: 'Gò Vấp, TP.HCM' },
-    package: { weight: 3.0, description: 'Giày dép', value: 800000 },
-    codAmount: 150000, shippingFee: 40000, paymentSide: 'receiver',
-    note: 'Hàng dễ vỡ',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '14/05/2026 15:05', location: 'Hệ thống', done: true, active: false },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '14/05/2026 17:00', location: 'Quận 1, TP.HCM', done: true, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '15/05/2026 09:00', location: 'Gò Vấp, TP.HCM', done: true, active: false },
-      { status: 'failed', label: 'Giao thất bại - Không liên lạc được', time: '15/05/2026 09:45', location: 'Gò Vấp, TP.HCM', done: true, active: false },
-      { status: 'returned', label: 'Đang hoàn hàng về người gửi', time: '15/05/2026 10:00', location: 'Gò Vấp, TP.HCM', done: true, active: true },
-    ],
-  },
-  '5': {
-    id: '5', trackingCode: 'PB001238', status: 'confirmed',
-    createdAt: '14/05/2026 14:00', updatedAt: '14/05/2026 14:10',
-    serviceType: 'Nhanh', estimatedDelivery: '15/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Hoàng Văn E', phone: '0945678901', address: '33 Cộng Hòa', province: 'Tân Bình, TP.HCM' },
-    package: { weight: 1.0, description: 'Sách vở', value: 200000 },
-    codAmount: 0, shippingFee: 25000, paymentSide: 'sender',
-    note: '',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '14/05/2026 14:10', location: 'Hệ thống', done: true, active: true },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '—', location: '', done: false, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '—', location: '', done: false, active: false },
-      { status: 'delivered', label: 'Giao hàng thành công', time: '—', location: '', done: false, active: false },
-    ],
-  },
-  '6': {
-    id: '6', trackingCode: 'PB001239', status: 'cancelled',
-    createdAt: '14/05/2026 13:00', updatedAt: '14/05/2026 13:30',
-    serviceType: 'Tiêu chuẩn', estimatedDelivery: '—',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Võ Thị F', phone: '0956789012', address: '77 Nguyễn Thái Sơn', province: 'Phú Nhuận, TP.HCM' },
-    package: { weight: 0.8, description: 'Thực phẩm', value: 500000 },
-    codAmount: 320000, shippingFee: 22000, paymentSide: 'receiver',
-    note: '',
-    timeline: [
-      { status: 'pending', label: 'Đơn hàng được tạo', time: '14/05/2026 13:00', location: 'Hệ thống', done: true, active: false },
-      { status: 'cancelled', label: 'Đơn hàng đã bị huỷ', time: '14/05/2026 13:30', location: 'Hệ thống', done: true, active: true },
-    ],
-  },
-  '7': {
-    id: '7', trackingCode: 'PB001240', status: 'in_transit',
-    createdAt: '14/05/2026 10:00', updatedAt: '14/05/2026 18:00',
-    serviceType: 'Nhanh', estimatedDelivery: '15/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Đặng Văn G', phone: '0967890123', address: '12 Nguyễn Văn Linh', province: 'Quận 7, TP.HCM' },
-    package: { weight: 5.0, description: 'Máy móc phụ tùng', value: 3000000 },
-    codAmount: 800000, shippingFee: 55000, paymentSide: 'receiver',
-    note: 'Hàng nặng, cần 2 người bốc',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '14/05/2026 10:10', location: 'Hệ thống', done: true, active: false },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '14/05/2026 12:00', location: 'Quận 1, TP.HCM', done: true, active: false },
-      { status: 'at_hub', label: 'Hàng đến kho tổng', time: '14/05/2026 15:00', location: 'Hub Thủ Đức', done: true, active: false },
-      { status: 'in_transit', label: 'Đang vận chuyển đến chi nhánh', time: '14/05/2026 18:00', location: 'Đang di chuyển', done: true, active: true },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '—', location: '', done: false, active: false },
-      { status: 'delivered', label: 'Giao hàng thành công', time: '—', location: '', done: false, active: false },
-    ],
-  },
-  '8': {
-    id: '8', trackingCode: 'PB001241', status: 'out_for_delivery',
-    createdAt: '14/05/2026 09:00', updatedAt: '15/05/2026 08:30',
-    serviceType: 'Tiêu chuẩn', estimatedDelivery: '15/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Bùi Thị H', phone: '0978901234', address: '55 Ba Tháng Hai', province: 'Quận 10, TP.HCM' },
-    package: { weight: 1.2, description: 'Đồ gia dụng', value: 450000 },
-    codAmount: 0, shippingFee: 28000, paymentSide: 'sender',
-    note: '',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '14/05/2026 09:15', location: 'Hệ thống', done: true, active: false },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '14/05/2026 11:30', location: 'Quận 1, TP.HCM', done: true, active: false },
-      { status: 'at_hub', label: 'Hàng đến bưu cục', time: '14/05/2026 14:00', location: 'Hub Q.1 - TP.HCM', done: true, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '15/05/2026 08:30', location: 'Quận 10, TP.HCM', done: true, active: true },
-      { status: 'delivered', label: 'Giao hàng thành công', time: '—', location: '', done: false, active: false },
-    ],
-  },
-  '9': {
-    id: '9', trackingCode: 'PB001242', status: 'picked_up',
-    createdAt: '13/05/2026 16:00', updatedAt: '13/05/2026 18:00',
-    serviceType: 'Nhanh', estimatedDelivery: '15/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Ngô Văn I', phone: '0989012345', address: '99 Lê Thị Riêng', province: 'Quận 12, TP.HCM' },
-    package: { weight: 2.5, description: 'Quần áo thể thao', value: 600000 },
-    codAmount: 450000, shippingFee: 38000, paymentSide: 'receiver',
-    note: 'Giao buổi sáng',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '13/05/2026 16:10', location: 'Hệ thống', done: true, active: false },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '13/05/2026 18:00', location: 'Quận 1, TP.HCM', done: true, active: true },
-      { status: 'at_hub', label: 'Hàng đến kho tổng', time: '—', location: '', done: false, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '—', location: '', done: false, active: false },
-      { status: 'delivered', label: 'Giao hàng thành công', time: '—', location: '', done: false, active: false },
-    ],
-  },
-  '10': {
-    id: '10', trackingCode: 'PB001243', status: 'failed',
-    createdAt: '13/05/2026 11:00', updatedAt: '13/05/2026 16:00',
-    serviceType: 'Tiêu chuẩn', estimatedDelivery: '13/05/2026',
-    sender: { name: 'Công ty ABC', phone: '0281234567', address: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-    receiver: { name: 'Dương Thị K', phone: '0990123456', address: '24 Kha Vạn Cân', province: 'Thủ Đức, TP.HCM' },
-    package: { weight: 0.3, description: 'Tài liệu', value: 0 },
-    codAmount: 180000, shippingFee: 18000, paymentSide: 'receiver',
-    note: '',
-    timeline: [
-      { status: 'confirmed', label: 'Đơn hàng được xác nhận', time: '13/05/2026 11:10', location: 'Hệ thống', done: true, active: false },
-      { status: 'picked_up', label: 'Shipper đã lấy hàng', time: '13/05/2026 13:00', location: 'Quận 1, TP.HCM', done: true, active: false },
-      { status: 'out_for_delivery', label: 'Đang giao đến người nhận', time: '13/05/2026 15:00', location: 'Thủ Đức, TP.HCM', done: true, active: false },
-      { status: 'failed', label: 'Giao thất bại - Người nhận vắng', time: '13/05/2026 16:00', location: 'Thủ Đức, TP.HCM', done: true, active: true },
-    ],
-  },
-}
-
+// ---- Status config ----
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   pending:          { label: 'Chờ xác nhận',   color: 'bg-amber-100 text-amber-700',   icon: Clock },
   confirmed:        { label: 'Đã xác nhận',     color: 'bg-blue-100 text-blue-700',     icon: CheckCircle },
@@ -220,32 +23,33 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   at_hub:           { label: 'Tại bưu cục',     color: 'bg-purple-100 text-purple-700', icon: Package },
   sorting:          { label: 'Đang phân loại',  color: 'bg-yellow-100 text-yellow-700', icon: Package },
   out_for_delivery: { label: 'Đang giao',       color: 'bg-blue-100 text-blue-700',     icon: Truck },
-  delivering:       { label: 'Đang giao',       color: 'bg-blue-100 text-blue-700',     icon: Truck },
   delivered:        { label: 'Đã giao',         color: 'bg-green-100 text-green-700',   icon: CheckCircle },
   failed:           { label: 'Giao thất bại',   color: 'bg-red-100 text-red-700',       icon: XCircle },
-  returned:         { label: 'Hoàn hàng',  color: 'bg-rose-100 text-rose-700',    icon: RotateCcw },
-  cancelled:        { label: 'Đã huỷ',          color: 'bg-gray-100 text-gray-500',    icon: XCircle },
+  returned:         { label: 'Hoàn hàng',       color: 'bg-rose-100 text-rose-700',     icon: RotateCcw },
+  cancelled:        { label: 'Đã huỷ',          color: 'bg-gray-100 text-gray-500',     icon: XCircle },
 }
 
-// ── Màu dot + icon cho từng bước timeline ────────────────────────────
-const TIMELINE_DOT: Record<string, {
-  dot: string; icon: React.ElementType; iconColor: string; textColor: string
-}> = {
-  confirmed:        { dot: 'bg-blue-100 ring-2 ring-blue-200',        icon: CheckCircle, iconColor: 'text-blue-600',   textColor: 'text-blue-700'   },
+const TIMELINE_DOT: Record<string, { dot: string; icon: React.ElementType; iconColor: string; textColor: string }> = {
+  confirmed:        { dot: 'bg-blue-100 ring-2 ring-blue-200',         icon: CheckCircle, iconColor: 'text-blue-600',   textColor: 'text-blue-700'   },
   picked_up:        { dot: 'bg-indigo-500 shadow-md shadow-indigo-200',icon: Package,     iconColor: 'text-white',      textColor: 'text-indigo-700' },
   at_hub:           { dot: 'bg-purple-500 shadow-md shadow-purple-200',icon: Package,     iconColor: 'text-white',      textColor: 'text-purple-700' },
   sorting:          { dot: 'bg-yellow-400 shadow-md shadow-yellow-200',icon: Package,     iconColor: 'text-white',      textColor: 'text-yellow-700' },
   in_transit:       { dot: 'bg-purple-500 shadow-md shadow-purple-200',icon: Truck,       iconColor: 'text-white',      textColor: 'text-purple-700' },
   out_for_delivery: { dot: 'bg-blue-500 shadow-md shadow-blue-200',    icon: Truck,       iconColor: 'text-white',      textColor: 'text-blue-700'   },
-  delivering:       { dot: 'bg-blue-500 shadow-md shadow-blue-200',    icon: Truck,       iconColor: 'text-white',      textColor: 'text-blue-700'   },
   delivered:        { dot: 'bg-green-500 shadow-md shadow-green-200',  icon: CheckCircle, iconColor: 'text-white',      textColor: 'text-green-700'  },
   failed:           { dot: 'bg-red-500 shadow-md shadow-red-200',      icon: XCircle,     iconColor: 'text-white',      textColor: 'text-red-700'    },
   returned:         { dot: 'bg-rose-400 shadow-md shadow-rose-200',    icon: RotateCcw,   iconColor: 'text-white',      textColor: 'text-rose-700'   },
   cancelled:        { dot: 'bg-gray-400',                              icon: XCircle,     iconColor: 'text-white',      textColor: 'text-gray-500'   },
   default:          { dot: 'bg-blue-100 ring-2 ring-blue-200',         icon: CheckCircle, iconColor: 'text-blue-500',   textColor: 'text-gray-700'   },
 }
-// Bước chưa tới — dot rỗng viền xám
 const PENDING_DOT = { dot: 'bg-white border-2 border-gray-200', icon: Clock, iconColor: 'text-gray-300', textColor: 'text-gray-400' }
+
+function formatDateTime(iso: string) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+}
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -259,9 +63,21 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 export default function OrderDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { success, info } = useToast()
+  const { success, error: showError } = useToast()
+  const orderId = params.id as string
 
-  const order = MOCK_ORDERS[params.id as string]
+  const [order, setOrder] = useState<Order | null>(null)
+  const [history, setHistory] = useState<OrderHistoryEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [cancelling, setCancelling] = useState(false)
+
+  useEffect(() => {
+    Promise.all([getOrder(orderId), getOrderHistory(orderId)])
+      .then(([o, h]) => { setOrder(o); setHistory(h) })
+      .catch(err => setLoadError(err instanceof Error ? err.message : 'Không thể tải đơn hàng'))
+      .finally(() => setLoading(false))
+  }, [orderId])
 
   const copyTracking = () => {
     if (!order) return
@@ -269,18 +85,40 @@ export default function OrderDetailPage() {
     success('Đã sao chép!', `Mã vận đơn ${order.trackingCode} đã được sao chép`)
   }
 
-  const handleCancelOrder = () => {
-    info('Đang xử lý...', 'Chức năng huỷ đơn sẽ được kết nối với API')
+  const handleCancelOrder = async () => {
+    if (!order) return
+    setCancelling(true)
+    try {
+      await cancelOrder(order.id)
+      setOrder(prev => prev ? { ...prev, status: 'cancelled' } : prev)
+      success('Đã huỷ đơn', `Đơn hàng ${order.trackingCode} đã được huỷ`)
+    } catch (err) {
+      showError('Huỷ thất bại', err instanceof Error ? err.message : 'Không thể huỷ đơn')
+    } finally {
+      setCancelling(false)
+    }
   }
 
-  if (!order) {
+  if (loading) {
+    return (
+      <>
+        <ToastContainer />
+        <div className="flex items-center justify-center py-32 text-gray-400">
+          <Loader2 size={24} className="animate-spin mr-2" />
+          <span className="text-sm">Đang tải thông tin đơn hàng...</span>
+        </div>
+      </>
+    )
+  }
+
+  if (loadError || !order) {
     return (
       <>
         <ToastContainer />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
           <AlertCircle size={40} className="text-gray-300" />
           <h2 className="text-lg font-semibold text-gray-700">Không tìm thấy đơn hàng</h2>
-          <p className="text-sm text-gray-400">Mã đơn không tồn tại hoặc đã bị xoá</p>
+          <p className="text-sm text-gray-400">{loadError || 'Mã đơn không tồn tại hoặc đã bị xoá'}</p>
           <Link href="/orders"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
             Về danh sách đơn
@@ -290,11 +128,28 @@ export default function OrderDetailPage() {
     )
   }
 
-  const statusCfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG['pending']
+  const statusCfg = STATUS_CONFIG[order.status as string] ?? STATUS_CONFIG['pending']
   const StatusIcon = statusCfg.icon
-  const totalCollect = order.paymentSide === 'receiver'
-    ? order.codAmount + order.shippingFee
-    : order.codAmount
+  const totalCollect = order.codAmount
+
+  // Build timeline from history; if empty, show single current-status entry
+  const timelineItems = history.length > 0
+    ? history.map((h, idx) => ({
+        status:   h.status as string,
+        label:    STATUS_CONFIG[h.status as string]?.label ?? String(h.status),
+        time:     formatDateTime(h.timestamp),
+        location: h.note || '',
+        done:     true,
+        active:   idx === history.length - 1,
+      }))
+    : [{
+        status:   order.status as string,
+        label:    statusCfg.label,
+        time:     formatDateTime(order.updatedAt),
+        location: '',
+        done:     true,
+        active:   true,
+      }]
 
   return (
     <>
@@ -317,22 +172,23 @@ export default function OrderDetailPage() {
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/orders')}
-              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+            <button type="button" onClick={() => router.push('/orders')}
+              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+              aria-label="Quay lại">
               <ArrowLeft size={16} />
             </button>
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-xl font-bold text-gray-900 font-mono">{order.trackingCode}</h1>
-                <button
-                  onClick={copyTracking}
+                <button type="button" onClick={copyTracking}
                   className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                  title="Sao chép mã vận đơn"
-                >
+                  aria-label="Sao chép mã vận đơn">
                   <Copy size={14} />
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">Tạo lúc {order.createdAt} · {order.serviceType}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Tạo lúc {formatDateTime(order.createdAt)}
+              </p>
             </div>
           </div>
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${statusCfg.color}`}>
@@ -351,13 +207,13 @@ export default function OrderDetailPage() {
               <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 bg-gray-50">
                 <Truck size={16} className="text-blue-600" />
                 <h2 className="text-sm font-semibold text-gray-800">Hành trình đơn hàng</h2>
-                <span className="ml-auto text-xs text-gray-400">Cập nhật: {order.updatedAt}</span>
+                <span className="ml-auto text-xs text-gray-400">Cập nhật: {formatDateTime(order.updatedAt)}</span>
               </div>
               <div className="p-5">
                 <div className="relative">
                   <div className="absolute left-[15px] top-5 bottom-5 w-px bg-gray-100" />
                   <div className="flex flex-col gap-0">
-                    {order.timeline.map((event, idx) => {
+                    {timelineItems.map((event, idx) => {
                       const dotCfg = event.done
                         ? (TIMELINE_DOT[event.status] ?? TIMELINE_DOT['default'])
                         : PENDING_DOT
@@ -372,7 +228,7 @@ export default function OrderDetailPage() {
                               {event.label}
                             </p>
                             <div className="flex items-center gap-3 mt-0.5">
-                              {event.time !== '—' && (
+                              {event.time && event.time !== '—' && (
                                 <span className="text-xs text-gray-400">{event.time}</span>
                               )}
                               {event.location && (
@@ -399,15 +255,27 @@ export default function OrderDetailPage() {
               <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8">
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Người nhận</p>
-                  <InfoRow label="Họ tên"><span className="flex items-center gap-1.5"><User size={13} className="text-gray-400" />{order.receiver.name}</span></InfoRow>
-                  <InfoRow label="Điện thoại"><span className="flex items-center gap-1.5"><Phone size={13} className="text-gray-400" />{order.receiver.phone}</span></InfoRow>
-                  <InfoRow label="Địa chỉ"><span className="flex items-center gap-1.5"><MapPin size={13} className="text-gray-400" />{order.receiver.address}, {order.receiver.province}</span></InfoRow>
+                  <InfoRow label="Họ tên">
+                    <span className="flex items-center gap-1.5"><User size={13} className="text-gray-400" />{order.receiverName}</span>
+                  </InfoRow>
+                  <InfoRow label="Điện thoại">
+                    <span className="flex items-center gap-1.5"><Phone size={13} className="text-gray-400" />{order.receiverPhone}</span>
+                  </InfoRow>
+                  <InfoRow label="Địa chỉ">
+                    <span className="flex items-center gap-1.5"><MapPin size={13} className="text-gray-400" />{order.receiverAddress}</span>
+                  </InfoRow>
                 </div>
                 <div className="mt-5 sm:mt-0">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Người gửi</p>
-                  <InfoRow label="Tên"><span className="flex items-center gap-1.5"><User size={13} className="text-gray-400" />{order.sender.name}</span></InfoRow>
-                  <InfoRow label="Điện thoại"><span className="flex items-center gap-1.5"><Phone size={13} className="text-gray-400" />{order.sender.phone}</span></InfoRow>
-                  <InfoRow label="Địa chỉ"><span className="flex items-center gap-1.5"><MapPin size={13} className="text-gray-400" />{order.sender.address}</span></InfoRow>
+                  <InfoRow label="Tên">
+                    <span className="flex items-center gap-1.5"><User size={13} className="text-gray-400" />{order.senderName}</span>
+                  </InfoRow>
+                  <InfoRow label="Điện thoại">
+                    <span className="flex items-center gap-1.5"><Phone size={13} className="text-gray-400" />{order.senderPhone}</span>
+                  </InfoRow>
+                  <InfoRow label="Bưu cục gửi">
+                    <span className="flex items-center gap-1.5"><MapPin size={13} className="text-gray-400" />{order.senderAddress}</span>
+                  </InfoRow>
                 </div>
               </div>
             </div>
@@ -419,9 +287,8 @@ export default function OrderDetailPage() {
                 <h2 className="text-sm font-semibold text-gray-800">Thông tin hàng hoá</h2>
               </div>
               <div className="p-5">
-                <InfoRow label="Mô tả">{order.package.description || '—'}</InfoRow>
-                <InfoRow label="Khối lượng">{order.package.weight} kg</InfoRow>
-                <InfoRow label="Giá trị hàng">{order.package.value > 0 ? order.package.value.toLocaleString('vi-VN') + ' đ' : '—'}</InfoRow>
+                {order.dimensions && <InfoRow label="Kích thước">{order.dimensions}</InfoRow>}
+                <InfoRow label="Khối lượng">{order.weight} kg</InfoRow>
                 {order.note && <InfoRow label="Ghi chú">{order.note}</InfoRow>}
               </div>
             </div>
@@ -447,10 +314,6 @@ export default function OrderDetailPage() {
                     {order.codAmount > 0 ? order.codAmount.toLocaleString('vi-VN') + ' đ' : '—'}
                   </span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Người trả phí</span>
-                  <span className="font-medium text-gray-900">{order.paymentSide === 'receiver' ? 'Người nhận' : 'Người gửi'}</span>
-                </div>
                 <div className="border-t border-dashed border-gray-200 pt-3 mt-1 flex justify-between">
                   <span className="text-xs text-gray-500">Tổng thu khi giao</span>
                   <span className="font-bold text-lg text-blue-600">{totalCollect.toLocaleString('vi-VN')} đ</span>
@@ -472,22 +335,20 @@ export default function OrderDetailPage() {
                 </Link>
                 {(order.status === 'pending' || order.status === 'confirmed') && (
                   <button
+                    type="button"
                     onClick={handleCancelOrder}
-                    className="flex items-center justify-center gap-2 w-full py-2.5 border border-red-200 rounded-lg text-sm text-red-600 font-medium hover:bg-red-50 transition-colors"
+                    disabled={cancelling}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 border border-red-200 rounded-lg text-sm text-red-600 font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
                   >
-                    <XCircle size={14} /> Huỷ đơn hàng
+                    {cancelling
+                      ? <><Loader2 size={14} className="animate-spin" /> Đang huỷ...</>
+                      : <><XCircle size={14} /> Huỷ đơn hàng</>
+                    }
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Giao hàng dự kiến */}
-            {order.estimatedDelivery !== '—' && (
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-center">
-                <p className="text-xs text-blue-500 font-medium">Dự kiến giao hàng</p>
-                <p className="text-lg font-bold text-blue-700 mt-1">{order.estimatedDelivery}</p>
-              </div>
-            )}
           </div>
         </div>
       </div>
