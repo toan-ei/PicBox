@@ -16,4 +16,4 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
 jwt:
-  signer-key: test-signer-key-for-unit-testing-only-must-be-at-least-32-bytes
+  signerKey: test-signer-key-for-unit-testing-only-must-be-at-least-32-bytes
