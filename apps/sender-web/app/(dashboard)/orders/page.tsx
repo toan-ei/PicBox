@@ -4,45 +4,13 @@ import { useState, useEffect } from 'react'
 import {
   Search, Filter, Plus, Package,
   ChevronLeft, ChevronRight, Eye,
-  ArrowUpDown, X, Home
+  ArrowUpDown, X, Home, Loader2, AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { getMyOrders } from '@picbox/utils'
+import type { Order, OrderStatus } from '@picbox/types'
 
-// ---- Types ----
-type OrderStatus =
-  | 'pending' | 'confirmed' | 'picked_up' | 'in_transit'
-  | 'at_hub' | 'sorting' | 'out_for_delivery'
-  | 'delivered' | 'failed' | 'returned' | 'cancelled'
-
-interface Order {
-  id: string
-  trackingCode: string
-  receiverName: string
-  receiverPhone: string
-  receiverAddress: string
-  weight: number
-  codAmount: number
-  shippingFee: number
-  status: OrderStatus
-  createdAt: string
-}
-
-// ---- Mock data ----
-const mockOrders: Order[] = [
-  { id: '1', trackingCode: 'PB001234', receiverName: 'Nguyễn Văn A', receiverPhone: '0901234567', receiverAddress: 'Quận 1, TP.HCM', weight: 1.5, codAmount: 250000, shippingFee: 30000, status: 'out_for_delivery' as OrderStatus, createdAt: '2026-05-15T08:00:00Z' },
-  { id: '2', trackingCode: 'PB001235', receiverName: 'Trần Thị B', receiverPhone: '0912345678', receiverAddress: 'Quận 3, TP.HCM', weight: 0.5, codAmount: 0, shippingFee: 20000, status: 'delivered', createdAt: '2026-05-15T07:30:00Z' },
-  { id: '3', trackingCode: 'PB001236', receiverName: 'Lê Văn C', receiverPhone: '0923456789', receiverAddress: 'Bình Thạnh, TP.HCM', weight: 2.0, codAmount: 500000, shippingFee: 35000, status: 'pending', createdAt: '2026-05-15T07:00:00Z' },
-  { id: '4', trackingCode: 'PB001237', receiverName: 'Phạm Thị D', receiverPhone: '0934567890', receiverAddress: 'Gò Vấp, TP.HCM', weight: 3.0, codAmount: 150000, shippingFee: 40000, status: 'returned', createdAt: '2026-05-14T15:00:00Z' },
-  { id: '5', trackingCode: 'PB001238', receiverName: 'Hoàng Văn E', receiverPhone: '0945678901', receiverAddress: 'Tân Bình, TP.HCM', weight: 1.0, codAmount: 0, shippingFee: 25000, status: 'confirmed', createdAt: '2026-05-14T14:00:00Z' },
-  { id: '6', trackingCode: 'PB001239', receiverName: 'Võ Thị F', receiverPhone: '0956789012', receiverAddress: 'Phú Nhuận, TP.HCM', weight: 0.8, codAmount: 320000, shippingFee: 22000, status: 'cancelled', createdAt: '2026-05-14T13:00:00Z' },
-  { id: '7', trackingCode: 'PB001240', receiverName: 'Đặng Văn G', receiverPhone: '0967890123', receiverAddress: 'Quận 7, TP.HCM', weight: 5.0, codAmount: 800000, shippingFee: 55000, status: 'in_transit', createdAt: '2026-05-14T10:00:00Z' },
-  { id: '8', trackingCode: 'PB001241', receiverName: 'Bùi Thị H', receiverPhone: '0978901234', receiverAddress: 'Quận 10, TP.HCM', weight: 1.2, codAmount: 0, shippingFee: 28000, status: 'out_for_delivery', createdAt: '2026-05-14T09:00:00Z' },
-  { id: '9', trackingCode: 'PB001242', receiverName: 'Ngô Văn I', receiverPhone: '0989012345', receiverAddress: 'Quận 12, TP.HCM', weight: 2.5, codAmount: 450000, shippingFee: 38000, status: 'picked_up', createdAt: '2026-05-13T16:00:00Z' },
-  { id: '10', trackingCode: 'PB001243', receiverName: 'Dương Thị K', receiverPhone: '0990123456', receiverAddress: 'Thủ Đức, TP.HCM', weight: 0.3, codAmount: 180000, shippingFee: 18000, status: 'failed', createdAt: '2026-05-13T11:00:00Z' },
-]
-
-// ---- Status config (TikTok Shop Style) ----
+// ---- Status config ----
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
   pending:          { label: 'Chờ xác nhận',   color: 'bg-gray-100 text-gray-500',     dot: 'bg-gray-400' },
   confirmed:        { label: 'Đã xác nhận',     color: 'bg-blue-50 text-blue-600',      dot: 'bg-blue-500' },
@@ -51,7 +19,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
   at_hub:           { label: 'Tại bưu cục',     color: 'bg-orange-50 text-orange-600',  dot: 'bg-orange-400' },
   sorting:          { label: 'Đang phân loại',  color: 'bg-orange-50 text-orange-600',  dot: 'bg-orange-400' },
   out_for_delivery: { label: 'Đang giao',       color: 'bg-cyan-50 text-cyan-600',      dot: 'bg-cyan-500' },
-  delivering:       { label: 'Đang giao',       color: 'bg-cyan-50 text-cyan-600',      dot: 'bg-cyan-500' },
   delivered:        { label: 'Đã giao',         color: 'bg-green-50 text-green-600',    dot: 'bg-green-500' },
   failed:           { label: 'Giao thất bại',   color: 'bg-red-50 text-red-500',        dot: 'bg-red-400' },
   returned:         { label: 'Hoàn hàng',       color: 'bg-amber-50 text-amber-600',    dot: 'bg-amber-400' },
@@ -82,24 +49,34 @@ function formatCurrency(amount: number) {
 }
 
 export default function OrdersPage() {
-  const router = useRouter()
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [page, setPage] = useState(1)
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
   const [showFilter, setShowFilter] = useState(false)
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
 
+  useEffect(() => {
+    getMyOrders(0, 100)
+      .then(res => setOrders(res.orders))
+      .catch(err => setError(err instanceof Error ? err.message : 'Không thể tải đơn hàng'))
+      .finally(() => setLoading(false))
+  }, [])
+
   useEffect(() => { setPage(1) }, [search, statusFilter, dateFrom, dateTo])
 
-  const filtered = mockOrders
+  const filtered = orders
     .filter(o => {
       const matchSearch =
         o.trackingCode.toLowerCase().includes(search.toLowerCase()) ||
         o.receiverName.toLowerCase().includes(search.toLowerCase()) ||
         o.receiverPhone.includes(search)
-      const matchStatus = statusFilter === 'all' || o.status === statusFilter
+      const matchStatus = statusFilter === 'all' || (o.status as string) === statusFilter
       const matchDateFrom = !dateFrom || new Date(o.createdAt) >= new Date(dateFrom)
       const matchDateTo = !dateTo || new Date(o.createdAt) <= new Date(dateTo + 'T23:59:59Z')
       return matchSearch && matchStatus && matchDateFrom && matchDateTo
@@ -111,7 +88,6 @@ export default function OrdersPage() {
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
   const hasActiveFilter = statusFilter !== 'all' || dateFrom || dateTo
 
   const resetFilters = () => {
@@ -119,6 +95,31 @@ export default function OrdersPage() {
     setDateFrom('')
     setDateTo('')
     setPage(1)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32 text-gray-400">
+        <Loader2 size={24} className="animate-spin mr-2" />
+        <span className="text-sm">Đang tải đơn hàng...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-red-500 gap-2">
+        <AlertCircle size={32} />
+        <p className="text-sm font-medium">{error}</p>
+        <button
+          type="button"
+          onClick={() => { setError(''); setLoading(true); getMyOrders(0, 100).then(r => setOrders(r.orders)).catch(e => setError(e.message)).finally(() => setLoading(false)) }}
+          className="text-xs text-blue-600 hover:underline"
+        >
+          Thử lại
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -176,9 +177,7 @@ export default function OrdersPage() {
             <Filter size={14} />
             Lọc
             {hasActiveFilter && (
-              <span className="w-4 h-4 bg-blue-600 text-white rounded-full text-[10px] flex items-center justify-center font-bold">
-                !
-              </span>
+              <span className="w-4 h-4 bg-blue-600 text-white rounded-full text-[10px] flex items-center justify-center font-bold">!</span>
             )}
           </button>
 
@@ -236,7 +235,7 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* Status tab */}
+        {/* Status tabs */}
         <div className="flex gap-0 border-b border-gray-200 overflow-x-auto">
           {STATUS_FILTERS.slice(0, 6).map(f => (
             <button
@@ -279,13 +278,11 @@ export default function OrdersPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {paginated.map(order => {
-                  const status = STATUS_CONFIG[order.status] ?? { label: order.status, color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' }
+                  const status = STATUS_CONFIG[order.status as string] ?? { label: order.status, color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' }
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3.5">
-                        <span className="font-mono text-sm font-semibold text-blue-600">
-                          {order.trackingCode}
-                        </span>
+                        <span className="font-mono text-sm font-semibold text-blue-600">{order.trackingCode}</span>
                       </td>
                       <td className="px-4 py-3.5">
                         <p className="text-sm font-medium text-gray-900">{order.receiverName}</p>
@@ -303,7 +300,6 @@ export default function OrdersPage() {
                         <span className="text-sm text-gray-700">{formatCurrency(order.shippingFee)}</span>
                       </td>
                       <td className="px-4 py-3.5">
-                        {/* New Status Badge Design */}
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${status.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                           {status.label}
@@ -326,7 +322,6 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {filtered.length > PAGE_SIZE && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">
@@ -334,6 +329,8 @@ export default function OrdersPage() {
             </span>
             <div className="flex items-center gap-1">
               <button
+                type="button"
+                aria-label="Trang trước"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -345,15 +342,15 @@ export default function OrdersPage() {
                   key={p}
                   onClick={() => setPage(p)}
                   className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
-                    p === page
-                      ? 'bg-blue-600 text-white'
-                      : 'border border-gray-200 text-gray-600 hover:border-gray-300'
+                    p === page ? 'bg-blue-600 text-white' : 'border border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
                   {p}
                 </button>
               ))}
               <button
+                type="button"
+                aria-label="Trang sau"
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
