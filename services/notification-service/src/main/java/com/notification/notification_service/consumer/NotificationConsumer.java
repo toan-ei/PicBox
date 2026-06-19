@@ -2,6 +2,9 @@ package com.notification.notification_service.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.notification.notification_service.dto.NotificationEvent;
+import com.notification.notification_service.dto.event.OrderCreatedEvent;
+import com.notification.notification_service.dto.event.OrderStatusChangedEvent;
+import com.notification.notification_service.dto.event.PaymentSuccessEvent;
 import com.notification.notification_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,40 +20,58 @@ public class NotificationConsumer {
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "notification.events", groupId = "notification-service")
-    public void handleNotification(@Payload String message) {
-        log.info("Received notification event: {}", message);
+    @KafkaListener(topics = "order.created", groupId = "notification-service")
+    public void onOrderCreated(@Payload String message) {
+        log.info("Received order.created: {}", message);
         try {
-            NotificationEvent event = objectMapper.readValue(message, NotificationEvent.class);
-            notificationService.processNotification(event);
+            OrderCreatedEvent event = objectMapper.readValue(message, OrderCreatedEvent.class);
+            notificationService.processOrderCreated(event);
         } catch (Exception e) {
-            log.error("Error processing notification event: {}", e.getMessage());
+            log.error("Error processing order.created: {}", e.getMessage());
         }
     }
 
-    @KafkaListener(topics = "order.created", groupId = "notification-service")
-    public void handleOrderCreated(@Payload String message) {
-        log.info("Order created, sending notification: {}", message);
+    @KafkaListener(topics = "order.status_changed", groupId = "notification-service")
+    public void onOrderStatusChanged(@Payload String message) {
+        log.info("Received order.status_changed: {}", message);
         try {
-            NotificationEvent event = new NotificationEvent();
-            event.setType("ORDER_CREATED");
-            event.setMessage(message);
-            notificationService.processNotification(event);
+            OrderStatusChangedEvent event = objectMapper.readValue(message, OrderStatusChangedEvent.class);
+            notificationService.processOrderStatusChanged(event);
         } catch (Exception e) {
-            log.error("Error processing order.created event: {}", e.getMessage());
+            log.error("Error processing order.status_changed: {}", e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "order.cancelled", groupId = "notification-service")
+    public void onOrderCancelled(@Payload String message) {
+        log.info("Received order.cancelled: {}", message);
+        try {
+            OrderStatusChangedEvent event = objectMapper.readValue(message, OrderStatusChangedEvent.class);
+            notificationService.processOrderCancelled(event);
+        } catch (Exception e) {
+            log.error("Error processing order.cancelled: {}", e.getMessage());
         }
     }
 
     @KafkaListener(topics = "payment.success", groupId = "notification-service")
-    public void handlePaymentSuccess(@Payload String message) {
-        log.info("Payment success, sending notification: {}", message);
+    public void onPaymentSuccess(@Payload String message) {
+        log.info("Received payment.success: {}", message);
         try {
-            NotificationEvent event = new NotificationEvent();
-            event.setType("PAYMENT_SUCCESS");
-            event.setMessage(message);
-            notificationService.processNotification(event);
+            PaymentSuccessEvent event = objectMapper.readValue(message, PaymentSuccessEvent.class);
+            notificationService.processPaymentSuccess(event);
         } catch (Exception e) {
-            log.error("Error processing payment.success event: {}", e.getMessage());
+            log.error("Error processing payment.success: {}", e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "notification.events", groupId = "notification-service")
+    public void onGenericNotification(@Payload String message) {
+        log.info("Received notification.events: {}", message);
+        try {
+            NotificationEvent event = objectMapper.readValue(message, NotificationEvent.class);
+            notificationService.processGeneric(event);
+        } catch (Exception e) {
+            log.error("Error processing notification.events: {}", e.getMessage());
         }
     }
 }
