@@ -56,9 +56,13 @@ public class UserService {
         roleRepository.findById(PredefinedRole.STUDENT_ROLE).ifPresent(roles::add);
         user.setRoles(roles);
         user = userRepository.save(user);
-        ProfileRequest profileRequest = profileMapper.toProfileRequest(request);
-        profileRequest.setUserId(user.getId());
-        profileClient.createProfile(profileRequest);
+        try {
+            ProfileRequest profileRequest = profileMapper.toProfileRequest(request);
+            profileRequest.setUserId(user.getId());
+            profileClient.createProfile(profileRequest);
+        } catch (Exception e) {
+            log.warn("Could not create profile for user {}: {}", user.getId(), e.getMessage());
+        }
         return userMapper.toUserResponse(user);
     }
     @PostAuthorize("returnObject.username == authentication.name")

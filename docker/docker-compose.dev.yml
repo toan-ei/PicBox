@@ -175,6 +175,16 @@ services:
       - "8080:8080"
     environment:
       <<: *jwt-env
+      IDENTITY_BASE_URL: http://identity-service:8087
+      IDENTITY_SERVICE_URL: http://identity-service:8087
+      PROFILE_SERVICE_URL: http://profile-service:8081
+      ORDER_SERVICE_URL: http://order-service:8082
+      PAYMENT_SERVICE_URL: http://payment-service:8083
+      TRACKING_SERVICE_URL: http://tracking-service:8088
+      HUB_SERVICE_URL: http://hub-and-branch-service:8084
+      STAFF_SERVICE_URL: http://staff-service:8085
+      NOTIFICATION_SERVICE_URL: http://notification-service:8086
+      FILE_SERVICE_URL: http://file-service:8089
     depends_on:
       - identity-service
       - profile-service
@@ -183,6 +193,7 @@ services:
       - tracking-service
       - hub-and-branch-service
       - staff-service
+      - notification-service
 
   identity-service:
     <<: *java-svc
@@ -202,6 +213,7 @@ services:
     container_name: picbox-profile
     environment:
       <<: [*db-env, *kafka-env, *jwt-env]
+      FILE_SERVICE_URL: http://file-service:8089/file
     depends_on:
       mysql:
         condition: service_healthy
@@ -282,6 +294,20 @@ services:
       kafka:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  file-service:
+    <<: *java-svc
+    build:
+      context: ../services/file-service
+    container_name: picbox-file
+    environment:
+      FILE_SERVICE_URL: http://file-service:8089/file
+      FILE_DOWNLOAD_PREFIX: http://localhost:8089/file/media/download/
+    volumes:
+      - filedata:/data
+    depends_on:
+      mongodb:
         condition: service_healthy
 
   notification-service:
@@ -387,3 +413,4 @@ volumes:
   mongodata:
   redisdata:
   zkdata:
+  filedata:

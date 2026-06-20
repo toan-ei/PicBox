@@ -9,12 +9,12 @@ spring:
       max-file-size: 500MB
       max-request-size: 500MB
 server:
-  port: 8083
+  port: ${SERVER_PORT:8089}
   servlet:
     context-path: /file
 
 app:
   file:
-    storage-dir-avatar: D:/workspace/media/
-    storage-dir-video: D:/workspace/media-video/
-    download-prefix: http://localhost:8083/file/media/download/
+    storage-dir-avatar: ${FILE_STORAGE_AVATAR:/data/media/}
+    storage-dir-video: ${FILE_STORAGE_VIDEO:/data/media-video/}
+    download-prefix: ${FILE_DOWNLOAD_PREFIX:http://localhost:8089/file/media/download/}
