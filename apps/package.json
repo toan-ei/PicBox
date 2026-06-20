@@ -4,19 +4,22 @@
   "private": true,
   "packageManager": "npm@10.9.3",
   "workspaces": [
-    "apps/*",
-    "packages/*",
-    "sender-web"
+    "admin-web",
+    "driver-portal",
+    "ops-dashboard",
+    "shipper-portal",
+    "sender-web",
+    "packages/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "dev:admin": "npm run dev",
-    "dev:shipper": "npm run dev --workspace=apps/shipper-portal",
-    "dev:driver": "npm run dev --workspace=apps/driver-portal",
-    "dev:ops": "npm run dev --workspace=apps/ops-dashboard",
-    "build:admin": "npm run build --workspace=apps/admin-web"
+    "dev:sender": "npm run dev --workspace=sender-web",
+    "dev:admin": "npm run dev --workspace=admin-web",
+    "dev:shipper": "npm run dev --workspace=shipper-portal",
+    "dev:driver": "npm run dev --workspace=driver-portal",
+    "dev:ops": "npm run dev --workspace=ops-dashboard"
   },
   "devDependencies": {
     "turbo": "^2.5.0"

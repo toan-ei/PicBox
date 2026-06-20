@@ -13,10 +13,14 @@ import java.util.List;
 
 @Configuration
 public class WebClientConfiguration {
+
+    @org.springframework.beans.factory.annotation.Value("${identity.base-url:http://localhost:8087}")
+    private String identityBaseUrl;
+
     @Bean
     WebClient webClient(){
         return WebClient.builder()
-                .baseUrl("http://localhost:8080/identity")
+                .baseUrl(identityBaseUrl + "/identity")
                 .build();
     }
 

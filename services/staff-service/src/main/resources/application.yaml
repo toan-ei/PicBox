@@ -8,7 +8,7 @@ spring:
     name: staff-service
   datasource:
     url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/staff_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-    username: ${DB_USERNAME:root}
+    username: ${DB_USERNAME:dev}
     password: ${DB_PASSWORD:devpass}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
