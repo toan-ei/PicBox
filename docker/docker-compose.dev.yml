@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────
-#  Biến môi trường dùng chung cho backend services
+#  Biến môi trường dùng chung
 # ──────────────────────────────────────────────────────────────
 x-db-env: &db-env
   DB_HOST: mysql
@@ -18,6 +18,14 @@ x-redis-env: &redis-env
 x-jwt-env: &jwt-env
   JWT_SIGNER_KEY: ${JWT_SIGNER_KEY:-BcGAKAxY7nEWT4lOBlPMxo4lgdgurBlEuL5wlzxqSuUauQI5+2G6I6A6KRe38XhF}
 
+# Java services: JVM dùng 75% của 512MB = ~384MB heap
+x-java-svc: &java-svc
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        memory: 512m
+
 services:
 
   # ════════════════════════════════════════════════════════════
@@ -32,7 +40,7 @@ services:
       MYSQL_USER: dev
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-devpass}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysqldata:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
@@ -42,6 +50,10 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   mongodb:
     image: mongo:7
@@ -60,6 +72,10 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   redis:
     image: redis:7-alpine
@@ -75,6 +91,10 @@ services:
       timeout: 3s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128m
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -85,6 +105,10 @@ services:
     volumes:
       - zkdata:/var/lib/zookeeper/data
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -107,6 +131,10 @@ services:
       timeout: 10s
       retries: 10
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   kafka-init:
     image: confluentinc/cp-kafka:7.6.0
@@ -129,17 +157,24 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   # ════════════════════════════════════════════════════════════
   #  BACKEND SERVICES
   # ════════════════════════════════════════════════════════════
 
   gateway-api:
+    <<: *java-svc
     build:
       context: ../services/gateway-api
     container_name: picbox-gateway
     ports:
       - "8080:8080"
+    environment:
+      <<: *jwt-env
     depends_on:
       - identity-service
       - profile-service
@@ -148,9 +183,9 @@ services:
       - tracking-service
       - hub-and-branch-service
       - staff-service
-    restart: unless-stopped
 
   identity-service:
+    <<: *java-svc
     build:
       context: ../services/identity-service
     container_name: picbox-identity
@@ -159,9 +194,9 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    restart: unless-stopped
 
   profile-service:
+    <<: *java-svc
     build:
       context: ../services/profile-service
     container_name: picbox-profile
@@ -172,9 +207,9 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-    restart: unless-stopped
 
   order-service:
+    <<: *java-svc
     build:
       context: ../services/order-service
     container_name: picbox-order
@@ -189,9 +224,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
 
   payment-service:
+    <<: *java-svc
     build:
       context: ../services/payment-service
     container_name: picbox-payment
@@ -202,9 +237,9 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
-    restart: unless-stopped
 
   tracking-service:
+    <<: *java-svc
     build:
       context: ../services/tracking-service
     container_name: picbox-tracking
@@ -220,9 +255,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
 
   hub-and-branch-service:
+    <<: *java-svc
     build:
       context: ../services/hub-and-branch-service
     container_name: picbox-hub
@@ -233,9 +268,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
 
   staff-service:
+    <<: *java-svc
     build:
       context: ../services/staff-service
     container_name: picbox-staff
@@ -248,9 +283,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
 
   notification-service:
+    <<: *java-svc
     build:
       context: ../services/notification-service
     container_name: picbox-notification
@@ -267,10 +302,9 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-    restart: unless-stopped
 
   # ════════════════════════════════════════════════════════════
-  #  FRONTEND APPS
+  #  FRONTEND APPS  (dev: chạy local với npm run dev)
   # ════════════════════════════════════════════════════════════
 
   sender-web:
@@ -283,6 +317,10 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   admin-web:
     build:
@@ -294,6 +332,10 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   shipper-portal:
     build:
@@ -305,6 +347,10 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   driver-portal:
     build:
@@ -316,6 +362,10 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
   ops-dashboard:
     build:
@@ -327,6 +377,10 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256m
 
 volumes:
   mysqldata:
