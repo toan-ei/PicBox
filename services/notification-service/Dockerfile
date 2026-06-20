@@ -3,7 +3,6 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 ENV MAVEN_OPTS="-Dhttps.protocols=TLSv1.2,TLSv1.3"
-RUN mkdir -p /root/.m2 && printf '<settings><mirrors><mirror><id>aliyun</id><mirrorOf>central</mirrorOf><url>https://maven.aliyun.com/repository/public</url></mirror></mirrors></settings>' > /root/.m2/settings.xml
 COPY pom.xml .
 RUN --mount=type=cache,target=/root/.m2/repository mvn dependency:go-offline -B
 COPY src ./src

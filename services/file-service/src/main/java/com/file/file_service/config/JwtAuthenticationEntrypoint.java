@@ -1,8 +1,8 @@
 package com.file.file_service.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hannah.file_service.dto.response.ApiResponse;
-import com.hannah.file_service.exception.ErrorCode;
+import com.file.file_service.dto.response.ApiResponse;
+import com.file.file_service.exception.ErrorCode;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
