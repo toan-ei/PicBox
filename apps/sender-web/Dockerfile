@@ -20,6 +20,7 @@ WORKDIR /app
 
 COPY --from=builder --chown=app:app /app/node_modules ./node_modules
 COPY --from=builder --chown=app:app /app/packages ./packages
+COPY --from=builder --chown=app:app /app/sender-web/node_modules ./sender-web/node_modules
 COPY --from=builder --chown=app:app /app/sender-web/.next ./sender-web/.next
 COPY --from=builder --chown=app:app /app/sender-web/public ./sender-web/public
 COPY --from=builder --chown=app:app /app/sender-web/package.json ./sender-web/package.json
@@ -29,4 +30,4 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app/sender-web
 EXPOSE 3000
-CMD ["/app/node_modules/.bin/next", "start"]
+CMD ["./node_modules/.bin/next", "start"]

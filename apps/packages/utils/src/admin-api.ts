@@ -1,6 +1,5 @@
 import { apiClient } from "./api-client";
 import { toFrontendStatus } from "./order-api";
-import type { OrderPage } from "./order-api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -167,7 +166,8 @@ export async function countUsersByRole(role: string): Promise<number> {
     const { data } = await apiClient.get(
       `/identity/users/countUserWithRole/${role}`
     );
-    return (data?.result as number) ?? 0;
+    // result shape: { countUser: number }
+    return (data?.result?.countUser as number) ?? 0;
   } catch {
     return 0;
   }
@@ -177,7 +177,7 @@ export async function deleteUser(userId: string): Promise<void> {
   const { data } = await apiClient.delete(
     `/identity/users/deleteUser/${userId}`
   );
-  if (data.code !== 0 && data.code !== 1000) {
+  if (data.code !== 0 && data.code !== 1000 && data.code !== 1001) {
     throw new Error(data.message || "Xóa người dùng thất bại");
   }
 }

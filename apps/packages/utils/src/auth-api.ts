@@ -83,19 +83,30 @@ export async function apiRegister(params: {
   fullName: string;
   phone: string;
 }): Promise<void> {
-  const { data } = await axios.post(`${API_BASE}/identity/users/createUser`, {
-    username: params.username,
-    password: params.password,
-    gender: "",
-  });
-  if (data.code !== 1000 && data.code !== 0) {
-    throw new Error(data.message || "Đăng ký thất bại");
+  let data: Record<string, unknown>;
+  try {
+    const res = await axios.post(`${API_BASE}/identity/users/createUser`, {
+      username: params.username,
+      password: params.password,
+      gender: "",
+    });
+    data = res.data;
+  } catch (err: unknown) {
+    // Extract backend error message from Axios response body (e.g. "user existed")
+    const axiosErr = err as { response?: { data?: { message?: string } } };
+    const msg = axiosErr.response?.data?.message;
+    throw new Error(msg || "Đăng ký thất bại");
+  }
+
+  // identity-service uses code 1001 for success (other services use 1000 or 0)
+  if (data.code !== 1000 && data.code !== 1001 && data.code !== 0) {
+    throw new Error((data.message as string) || "Đăng ký thất bại");
   }
 
   // Create profile (best-effort; non-fatal if it fails)
   try {
     await axios.post(`${API_BASE}/profile/profiles/Internal/createProfile`, {
-      userId: data.result?.id,
+      userId: (data.result as Record<string, unknown>)?.id,
       fullName: params.fullName,
       phone: params.phone,
       email: params.username.includes("@") ? params.username : "",

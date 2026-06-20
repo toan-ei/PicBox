@@ -53,7 +53,7 @@ apiClient.interceptors.response.use(
         localStorage.removeItem("user");
         document.cookie = "auth_token=;path=/;max-age=0";
         if (typeof window !== "undefined") {
-          window.location.href = "/auth/login";
+          window.location.href = "/login";
         }
         return Promise.reject(refreshError);
       }
