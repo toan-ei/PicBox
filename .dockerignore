@@ -1,0 +1,23 @@
+.git
+.github
+.gitignore
+.idea
+.vscode
+.DS_Store
+*.md
+*.log
+
+# Build outputs
+**/node_modules
+**/.next
+**/.turbo
+**/target
+**/dist
+
+# Dev env files
+**/.env.local
+**/.env*.local
+
+# Test / infra tools
+infra/k6
+infra/prometheus
