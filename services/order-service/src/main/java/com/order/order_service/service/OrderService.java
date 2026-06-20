@@ -1,5 +1,7 @@
 package com.order.order_service.service;
 
+import com.order.order_service.constant.KafkaTopic;
+import com.order.order_service.dto.event.OrderStatusChangedEvent;
 import com.order.order_service.dto.request.CreateOrderRequest;
 import com.order.order_service.dto.request.UpdateOrderStatusRequest;
 import com.order.order_service.dto.response.OrderResponse;
@@ -33,6 +35,7 @@ public class OrderService {
     private final OrderStatusHistoryRepository statusHistoryRepository;
     private final PackageCustodyRepository custodyRepository;
     private final OrderSagaService orderSagaService;
+    private final OutboxService outboxService;
     private final OrderMapper orderMapper;
 
     public OrderResponse createOrder(String senderId, CreateOrderRequest request) {
@@ -85,6 +88,16 @@ public class OrderService {
             releaseCustody(orderId);
         }
 
+        outboxService.saveEvent("ORDER", orderId, KafkaTopic.ORDER_STATUS_CHANGED,
+                OrderStatusChangedEvent.builder()
+                        .orderId(orderId)
+                        .trackingCode(order.getTrackingCode())
+                        .userId(changedBy)
+                        .newStatus(request.getStatus().name())
+                        .note(request.getNote())
+                        .changedAt(LocalDateTime.now())
+                        .build());
+
         return orderMapper.toResponse(order);
     }
 
@@ -105,6 +118,16 @@ public class OrderService {
                 .build());
 
         releaseCustody(orderId);
+
+        outboxService.saveEvent("ORDER", orderId, KafkaTopic.ORDER_CANCELLED,
+                OrderStatusChangedEvent.builder()
+                        .orderId(orderId)
+                        .trackingCode(order.getTrackingCode())
+                        .userId(cancelledBy)
+                        .newStatus(com.order.order_service.enums.OrderStatus.CANCELLED.name())
+                        .note("Cancelled by " + cancelledBy)
+                        .changedAt(LocalDateTime.now())
+                        .build());
     }
 
     public List<OrderStatusHistory> getStatusHistory(String orderId) {

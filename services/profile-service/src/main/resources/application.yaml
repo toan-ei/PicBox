@@ -22,5 +22,8 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
+file-service:
+  url: ${FILE_SERVICE_URL:http://localhost:8089/file}
+
 jwt:
   signerKey: "${JWT_SIGNER_KEY:BcGAKAxY7nEWT4lOBlPMxo4lgdgurBlEuL5wlzxqSuUauQI5+2G6I6A6KRe38XhF}"

@@ -4,22 +4,22 @@ WORKDIR /app
 
 COPY package.json package-lock.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
-COPY apps/shipper-portal ./apps/shipper-portal
+COPY shipper-portal ./shipper-portal
 
 RUN --mount=type=cache,target=/root/.npm \
     npm install --registry=https://registry.npmmirror.com
 
-WORKDIR /app/apps/shipper-portal
+WORKDIR /app/shipper-portal
 RUN npm run build
 
 FROM node:20-alpine
 RUN addgroup -S app && adduser -S app -G app
-WORKDIR /app/apps/shipper-portal
+WORKDIR /app/shipper-portal
 
 COPY --from=builder --chown=app:app /app/node_modules /app/node_modules
 COPY --from=builder --chown=app:app /app/packages /app/packages
-COPY --from=builder --chown=app:app /app/apps/shipper-portal/.next ./.next
-COPY --from=builder --chown=app:app /app/apps/shipper-portal/package.json ./package.json
+COPY --from=builder --chown=app:app /app/shipper-portal/.next ./.next
+COPY --from=builder --chown=app:app /app/shipper-portal/package.json ./package.json
 
 USER app
 ENV NODE_ENV=production
