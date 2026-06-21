@@ -1,21 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "./sidebar";
 import Header from "./header";
 import Footer from "./footer";
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const router = useRouter();
+
+  // Auth guard – redirect to login if no token
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#050a18]">
-      {/* Fixed sidebar */}
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed((v) => !v)}
@@ -23,12 +32,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      {/*
-        Main content area.
-        Sidebar is `position: fixed` so it does not participate in flex flow.
-        We manually add left margin on ≥lg to avoid content hiding behind sidebar.
-        Classes sidebar-main-expanded / sidebar-main-collapsed are defined in globals.css.
-      */}
       <div
         className={[
           "flex flex-1 flex-col min-w-0 overflow-hidden",

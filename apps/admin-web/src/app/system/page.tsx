@@ -59,8 +59,8 @@ export default function SystemPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-white">Cấu hình hệ thống</h1>
-            <p className="text-[13px] text-slate-500 mt-0.5">Quản lý thông số hệ thống</p>
+            <h1 className="text-[18px] font-bold text-white">Cấu hình hệ thống</h1>
+            <p className="text-[12px] text-slate-500 mt-0.5">Quản lý thông số vận hành hệ thống PicBox</p>
           </div>
           <div className="flex gap-2">
             <button className="inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[13px] font-medium text-slate-400 hover:bg-white/[0.06] transition-all cursor-pointer">
@@ -92,7 +92,7 @@ export default function SystemPage() {
         {/* Config list */}
         <div className="space-y-3 stagger">
           {filtered.map((config) => (
-            <div key={config.key} className="rounded-2xl glass p-5 transition-all duration-200 hover:border-white/[0.1] animate-fadeIn">
+            <div key={config.key} className="rounded-xl glass p-4 transition-all duration-200 hover:border-white/[0.1] animate-fadeIn">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1.5">

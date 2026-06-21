@@ -1,31 +1,31 @@
 import React from "react";
 
 interface StatCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  changeType?: "positive" | "negative" | "neutral";
-  icon: React.ReactNode;
+  readonly title: string;
+  readonly value: string | number;
+  readonly change?: string;
+  readonly changeType?: "positive" | "negative" | "neutral";
+  readonly icon: React.ReactNode;
 }
 
-export default function StatCard({ title, value, change, changeType = "neutral", icon }: StatCardProps) {
-  const changeColor = {
-    positive: "text-emerald-400",
-    negative: "text-rose-400",
-    neutral: "text-slate-500",
-  };
+const changeColor = {
+  positive: "text-emerald-400",
+  negative: "text-rose-400",
+  neutral:  "text-slate-500",
+};
 
+export default function StatCard({ title, value, change, changeType = "neutral", icon }: StatCardProps) {
   return (
-    <div className="group rounded-2xl glass p-5 transition-all duration-300 hover:border-indigo-500/20 hover:glow-sm animate-fadeIn">
+    <div className="group rounded-2xl glass p-5 transition-all duration-200 hover:border-indigo-500/20 animate-fadeIn">
       <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-[16px] font-medium text-slate-500 uppercase tracking-wider">{title}</p>
-          <p className="text-[32px] font-bold text-white leading-none mt-3">{value}</p>
+        <div className="space-y-1 min-w-0">
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">{title}</p>
+          <p className="text-[28px] font-bold text-white leading-none pt-1">{value}</p>
           {change && (
-            <p className={`text-[15px] mt-2 font-medium ${changeColor[changeType]}`}>{change}</p>
+            <p className={`text-[12px] font-medium pt-0.5 ${changeColor[changeType]}`}>{change}</p>
           )}
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/[0.08] text-indigo-400 group-hover:bg-indigo-500/[0.15] transition-colors">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-500/[0.08] text-indigo-400 group-hover:bg-indigo-500/[0.14] transition-colors">
           {icon}
         </div>
       </div>

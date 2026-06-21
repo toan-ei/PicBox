@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Home, ChevronRight, Package, MapPin, Phone,
   User, Banknote, FileText, ArrowLeft,
-  CheckCircle, AlertCircle, Truck, Loader2, Copy
+  CheckCircle, AlertCircle, Truck, Loader2, Copy, Save
 } from 'lucide-react'
 import LocationSelector from '@/components/ui/LocationSelector'
 import { createOrder, BRANCH_LIST } from '@picbox/utils'
@@ -38,8 +38,27 @@ const SERVICE_OPTIONS = [
   { id: 'sameday',  label: 'Trong ngày',  time: '4–6 tiếng',price: '55.000 đ', fee: 55000, desc: 'Giao trong ngày, nội thành TP.HCM', icon: CheckCircle },
 ]
 
-// Sender's default origin branch — in production this comes from user profile / settings
 const ORIGIN_BRANCH = { id: 'HCM_01', name: 'Chi nhánh TP.HCM - Quận 1' }
+
+const DRAFT_KEY = 'picbox_new_order_draft'
+
+const EMPTY_FORM: FormData = {
+  receiverName: '', receiverPhone: '', receiverAddress: '',
+  receiverProvince: '', receiverDistrict: '', receiverWard: '',
+  packageWeight: '', packageWidth: '', packageLength: '', packageHeight: '',
+  packageDescription: '', packageValue: '', codAmount: '',
+  paymentSide: 'receiver', note: '', serviceType: 'standard',
+  destBranchId: BRANCH_LIST[0]?.id ?? '',
+}
+
+const EMPTY_LOCATION = {
+  provinceCode: '', provinceName: '', districtCode: '', districtName: '', ward: '', address: ''
+}
+
+function isDraftEmpty(f: FormData) {
+  const skip = new Set(['paymentSide', 'serviceType', 'destBranchId'])
+  return Object.entries(f).every(([k, v]) => skip.has(k) || v === '')
+}
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
@@ -75,23 +94,38 @@ function SectionCard({ title, icon: Icon, children }: { title: string; icon: Rea
 
 export default function NewOrderPage() {
   const router = useRouter()
-  const [form, setForm] = useState<FormData>({
-    receiverName: '', receiverPhone: '', receiverAddress: '',
-    receiverProvince: '', receiverDistrict: '', receiverWard: '',
-    packageWeight: '', packageWidth: '', packageLength: '', packageHeight: '',
-    packageDescription: '', packageValue: '', codAmount: '',
-    paymentSide: 'receiver', note: '', serviceType: 'standard',
-    destBranchId: BRANCH_LIST[0]?.id ?? '',
-  })
-
-  const [receiverLocation, setReceiverLocation] = useState({
-    provinceCode: '', provinceName: '', districtCode: '', districtName: '', ward: '', address: ''
-  })
-
+  const [form, setForm] = useState<FormData>(EMPTY_FORM)
+  const [receiverLocation, setReceiverLocation] = useState(EMPTY_LOCATION)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData | 'general', string>>>({})
   const [submitting, setSubmitting] = useState(false)
   const [createdTrackingCode, setCreatedTrackingCode] = useState<string | null>(null)
+  const [hasDraft, setHasDraft] = useState(false)
 
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const { form: savedForm, location: savedLocation } = JSON.parse(raw) as {
+        form: FormData
+        location: typeof EMPTY_LOCATION
+      }
+      if (savedForm && !isDraftEmpty(savedForm)) {
+        setForm({ ...EMPTY_FORM, ...savedForm })
+        if (savedLocation) setReceiverLocation(savedLocation)
+        setHasDraft(true)
+      }
+    } catch { /* ignore corrupt data */ }
+  }, [])
+
+  // Auto-save draft whenever form or location changes
+  useEffect(() => {
+    if (!isDraftEmpty(form)) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, location: receiverLocation }))
+    }
+  }, [form, receiverLocation])
+
+  // Sync LocationSelector → form address fields
   useEffect(() => {
     setForm(prev => ({
       ...prev,
@@ -139,7 +173,7 @@ export default function NewOrderPage() {
 
       const order = await createOrder({
         senderName:      currentUser?.name ?? 'Người gửi',
-        senderPhone:     '',
+        senderPhone:     currentUser?.phone || '0000000000',
         receiverName:    form.receiverName.trim(),
         receiverPhone:   form.receiverPhone.trim(),
         receiverAddress: [form.receiverAddress, form.receiverWard, form.receiverDistrict, form.receiverProvince]
@@ -155,9 +189,11 @@ export default function NewOrderPage() {
         fee:     svcFee,
         codAmount: cod || undefined,
         note:    form.note.trim() || undefined,
-        pickupMethod: 'PICKUP_AT_DOOR',
+        pickupMethod: 'PICKUP_AT_BRANCH',
       })
 
+      localStorage.removeItem(DRAFT_KEY)
+      setHasDraft(false)
       setCreatedTrackingCode(order.trackingCode)
     } catch (err) {
       setErrors({ general: err instanceof Error ? err.message : 'Tạo đơn thất bại, vui lòng thử lại' })
@@ -229,6 +265,27 @@ export default function NewOrderPage() {
         </button>
         <h1 className="text-xl font-bold text-gray-900">Tạo đơn hàng mới</h1>
       </div>
+
+      {hasDraft && (
+        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl text-sm">
+          <div className="flex items-center gap-2 text-blue-700">
+            <Save size={14} className="shrink-0" />
+            <span>Đã khôi phục bản nháp — bạn có thể tiếp tục điền thông tin.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.removeItem(DRAFT_KEY)
+              setForm(EMPTY_FORM)
+              setReceiverLocation(EMPTY_LOCATION)
+              setHasDraft(false)
+            }}
+            className="shrink-0 text-xs text-blue-500 hover:text-blue-700 underline underline-offset-2 whitespace-nowrap"
+          >
+            Nhập lại từ đầu
+          </button>
+        </div>
+      )}
 
       {errors.general && (
         <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">

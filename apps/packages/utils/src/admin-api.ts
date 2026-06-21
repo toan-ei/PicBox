@@ -173,6 +173,33 @@ export async function countUsersByRole(role: string): Promise<number> {
   }
 }
 
+export async function adminCreateUser(params: {
+  username: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+}): Promise<void> {
+  const { data } = await apiClient.post("/identity/users/createUser", {
+    username: params.username,
+    password: params.password,
+    gender: "",
+  });
+  if (data.code !== 0 && data.code !== 1000 && data.code !== 1001) {
+    throw new Error(data.message || "Tạo người dùng thất bại");
+  }
+  const userId = (data.result as { id?: string })?.id;
+  if (userId) {
+    try {
+      await apiClient.post("/profile/profiles/Internal/createProfile", {
+        userId,
+        fullName: params.fullName,
+        phone: params.phone || "",
+        email: params.username.includes("@") ? params.username : "",
+      });
+    } catch { /* profile creation is non-fatal */ }
+  }
+}
+
 export async function deleteUser(userId: string): Promise<void> {
   const { data } = await apiClient.delete(
     `/identity/users/deleteUser/${userId}`

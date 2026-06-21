@@ -35,7 +35,7 @@ export interface AuthResult {
 
 export async function apiLogin(username: string, password: string): Promise<AuthResult> {
   const { data } = await axios.post(`${API_BASE}/identity/auth/token`, { username, password });
-  if (data.code !== 1000 && data.code !== 0) {
+  if (data.code !== 1000 && data.code !== 1001 && data.code !== 0) {
     throw new Error(data.message || "Đăng nhập thất bại");
   }
   const token: string = data.result.token;

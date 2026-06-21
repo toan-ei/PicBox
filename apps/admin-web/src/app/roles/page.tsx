@@ -96,8 +96,8 @@ export default function RolesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-white">Phân quyền (RBAC)</h1>
-            <p className="text-[13px] text-slate-500 mt-0.5">Quản lý vai trò và quyền truy cập theo từng nhóm người dùng</p>
+            <h1 className="text-[18px] font-bold text-white">Phân quyền (RBAC)</h1>
+            <p className="text-[12px] text-slate-500 mt-0.5">Quản lý vai trò và quyền truy cập theo từng nhóm người dùng</p>
           </div>
           <button className="inline-flex items-center gap-2 h-9 px-4 rounded-xl gradient-brand text-white text-[13px] font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all cursor-pointer">
             <Plus size={14} /> Thêm vai trò

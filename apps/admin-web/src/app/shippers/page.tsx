@@ -61,8 +61,8 @@ export default function ShippersPage() {
       <div className="space-y-5 animate-fadeIn">
         {/* Header */}
         <div>
-          <h1 className="text-xl font-bold text-white">Quản lý Shipper</h1>
-          <p className="text-[13px] text-slate-500 mt-0.5">Theo dõi hoạt động và hiệu suất shipper trong hệ thống</p>
+          <h1 className="text-[18px] font-bold text-white">Quản lý Shipper</h1>
+          <p className="text-[12px] text-slate-500 mt-0.5">Theo dõi hoạt động và hiệu suất shipper trong hệ thống</p>
         </div>
 
         {/* Summary */}
@@ -70,12 +70,12 @@ export default function ShippersPage() {
           {SUMMARY.map((s) => {
             const Icon = s.icon;
             return (
-              <div key={s.label} className="glass rounded-2xl p-4 flex items-center gap-3 animate-fadeIn">
-                <div className={`h-10 w-10 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
-                  <Icon size={18} className={s.color} />
+              <div key={s.label} className="glass rounded-xl p-4 flex items-center gap-3 animate-fadeIn">
+                <div className={`h-9 w-9 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>
+                  <Icon size={16} className={s.color} />
                 </div>
                 <div>
-                  <p className="text-[22px] font-bold text-white leading-none">{s.value}</p>
+                  <p className="text-[20px] font-bold text-white leading-none">{s.value}</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">{s.label}</p>
                 </div>
               </div>
@@ -128,7 +128,7 @@ export default function ShippersPage() {
                   <div
                     key={shipper.id}
                     onClick={() => setSelected(shipper)}
-                    className={`glass rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:border-indigo-500/20 ${selected?.id === shipper.id ? "border-indigo-500/30 bg-indigo-500/[0.03]" : ""}`}
+                    className={`glass rounded-xl p-4 cursor-pointer transition-all duration-200 hover:border-indigo-500/20 ${selected?.id === shipper.id ? "border-indigo-500/30 bg-indigo-500/[0.03]" : ""}`}
                   >
                     {/* Top row */}
                     <div className="flex items-start justify-between mb-4">
@@ -182,7 +182,7 @@ export default function ShippersPage() {
 
           {/* Detail panel */}
           {selected && (
-            <div className="w-72 flex-shrink-0 glass rounded-2xl p-5 animate-slideDown">
+            <div className="w-72 flex-shrink-0 glass rounded-xl p-5 animate-slideDown">
               <div className="text-center mb-5">
                 <div className="relative inline-block">
                   <div className="h-16 w-16 rounded-2xl gradient-brand flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-indigo-500/20">
@@ -190,8 +190,8 @@ export default function ShippersPage() {
                   </div>
                   <span className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[#070d1f] ${STATUS_CONFIG[selected.status].dot}`} />
                 </div>
-                <p className="mt-3 text-[15px] font-bold text-white">{selected.name}</p>
-                <p className="text-[12px] text-slate-500">{selected.id} · {selected.vehicle}</p>
+                <p className="mt-3 text-[14px] font-bold text-white">{selected.name}</p>
+                <p className="text-[11px] text-slate-500">{selected.id} · {selected.vehicle}</p>
               </div>
 
               <div className="space-y-3 mb-5">

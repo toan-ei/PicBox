@@ -11,8 +11,14 @@ export {
 export type { CreateOrderParams, OrderPage, OrderHistoryEvent, Branch } from "./order-api";
 export {
   getAllAdminOrders, countOrdersByStatus, updateOrderStatus,
-  getAllUsers, countUsersByRole, deleteUser,
+  getAllUsers, countUsersByRole, adminCreateUser, deleteUser,
   getAllHubsAndBranches,
   getDashboardStats,
 } from "./admin-api";
 export type { AdminUser, AdminHub, AdminOrder, DashboardStats } from "./admin-api";
+export {
+  getMyWallet, topUpWallet, adminCreditWallet,
+  savePendingTopUp, getPendingTopUps, updateTopUpStatus,
+  getUserNotifications,
+} from "./wallet-api";
+export type { WalletInfo, NotificationItem, TopUpRequest } from "./wallet-api";

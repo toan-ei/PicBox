@@ -39,7 +39,9 @@ export default function Sidebar() {
   const NavList = () => (
     <nav className="flex-1 p-3 flex flex-col gap-1">
       {navItems.map(({ href, label, icon: Icon }) => {
-        const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+        const isActive = pathname === href ||
+          (href !== '/dashboard' && pathname.startsWith(href) &&
+            !navItems.some(item => item.href !== href && item.href.length > href.length && pathname.startsWith(item.href)))
         return (
           <Link key={href} href={href}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${

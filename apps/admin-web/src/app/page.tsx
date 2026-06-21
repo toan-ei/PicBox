@@ -38,101 +38,70 @@ function timeAgo(iso: string) {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats]           = useState<DashboardStats | null>(null);
+  const [stats, setStats]               = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<AdminOrder[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      getDashboardStats(),
-      getAllAdminOrders(),
-    ]).then(([s, orders]) => {
-      setStats(s);
-      setRecentOrders(orders.slice(0, 5));
-    }).catch(console.error).finally(() => setLoading(false));
+    Promise.all([getDashboardStats(), getAllAdminOrders()])
+      .then(([s, orders]) => { setStats(s); setRecentOrders(orders.slice(0, 6)); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const totalRevenue = recentOrders.reduce((s, o) => s + o.fee, 0);
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 stagger">
-          <StatCard
-            title="Tổng đơn hàng"
-            value={loading ? "..." : String(stats?.totalOrders ?? 0)}
-            change={loading ? "" : `${stats?.deliveredOrders ?? 0} đã hoàn thành`}
-            changeType="positive"
-            icon={<Package size={22} />}
-          />
-          <StatCard
-            title="Người dùng"
-            value={loading ? "..." : String(stats?.totalUsers ?? 0)}
-            change="Tổng khách hàng"
-            changeType="positive"
-            icon={<Users size={22} />}
-          />
-          <StatCard
-            title="Shipper hoạt động"
-            value={loading ? "..." : String(stats?.totalShippers ?? 0)}
-            change="Đang trong hệ thống"
-            changeType="positive"
-            icon={<Truck size={22} />}
-          />
-          <StatCard
-            title="Doanh thu ước tính"
-            value={loading ? "..." : formatCurrency(totalRevenue)}
-            change="Từ đơn đã ghi nhận"
-            changeType="positive"
-            icon={<TrendingUp size={22} />}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <StatCard title="Tổng đơn hàng"     value={loading ? "…" : String(stats?.totalOrders ?? 0)}    change={loading ? "" : `${stats?.deliveredOrders ?? 0} đã hoàn thành`} changeType="positive" icon={<Package size={20} />} />
+          <StatCard title="Người dùng"         value={loading ? "…" : String(stats?.totalUsers ?? 0)}     change="Tổng khách hàng"    changeType="positive" icon={<Users size={20} />} />
+          <StatCard title="Shipper hệ thống"   value={loading ? "…" : String(stats?.totalShippers ?? 0)} change="Đang trong hệ thống" changeType="positive" icon={<Truck size={20} />} />
+          <StatCard title="Doanh thu ước tính" value={loading ? "…" : formatCurrency(totalRevenue)}       change="Từ đơn đã ghi nhận" changeType="positive" icon={<TrendingUp size={20} />} />
         </div>
 
         {/* Content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Recent orders */}
-          <div className="lg:col-span-2 rounded-2xl glass p-5 animate-fadeIn">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-[19px] font-semibold text-white">Đơn hàng gần đây</h3>
-              <a href="/orders" className="text-[13px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
-                Xem tất cả <ArrowUpRight size={12} />
+          <div className="lg:col-span-2 rounded-2xl glass p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[15px] font-semibold text-white">Đơn hàng gần đây</h3>
+              <a href="/orders" className="text-[12px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+                Xem tất cả <ArrowUpRight size={11} />
               </a>
             </div>
 
             {loading ? (
               <div className="flex items-center justify-center py-10">
-                <Loader size={18} className="text-indigo-400 animate-spin" />
+                <Loader size={16} className="text-indigo-400 animate-spin" />
                 <span className="ml-2 text-[13px] text-slate-500">Đang tải...</span>
               </div>
             ) : recentOrders.length === 0 ? (
-              <p className="text-center text-[13px] text-slate-600 py-10">Chưa có đơn hàng nào</p>
+              <p className="text-center text-[13px] text-slate-600 py-8">Chưa có đơn hàng nào</p>
             ) : (
-              <div className="space-y-3.5">
+              <div className="space-y-2">
                 {recentOrders.map((order) => {
                   const sv = STATUS_LABEL[order.status] ?? STATUS_LABEL.pending;
                   return (
                     <div
                       key={order.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] p-3.5 transition-all duration-200 cursor-pointer group"
+                      className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.04] px-3.5 py-2.5 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-indigo-500/[0.08] flex items-center justify-center group-hover:bg-indigo-500/[0.12] transition-colors flex-shrink-0">
-                          <Package size={18} className="text-indigo-400" />
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-8 w-8 rounded-lg bg-indigo-500/[0.08] flex items-center justify-center flex-shrink-0">
+                          <Package size={14} className="text-indigo-400" />
                         </div>
-                        <div>
-                          <p className="text-[14px] font-semibold text-white">{order.trackingCode}</p>
-                          <p className="text-[12px] text-slate-500">{order.senderName} → {order.receiverName}</p>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-semibold text-white truncate">{order.trackingCode}</p>
+                          <p className="text-[11px] text-slate-500 truncate">{order.senderName} → {order.receiverName}</p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-                        <span className="text-[13px] font-medium text-slate-300 hidden sm:block">
-                          {formatCurrency(order.fee)}
-                        </span>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-[12px] font-medium text-slate-300 hidden sm:block">{formatCurrency(order.fee)}</span>
                         <Badge variant={sv.variant}>{sv.label}</Badge>
-                        <span className="text-[12px] text-slate-600 hidden md:block w-24 text-right">
-                          {timeAgo(order.createdAt)}
-                        </span>
+                        <span className="text-[11px] text-slate-600 hidden md:block w-20 text-right">{timeAgo(order.createdAt)}</span>
                       </div>
                     </div>
                   );
@@ -142,33 +111,26 @@ export default function DashboardPage() {
           </div>
 
           {/* System status */}
-          <div className="rounded-2xl glass p-5 animate-fadeIn">
-            <h3 className="text-[19px] font-semibold text-white mb-6">Trạng thái hệ thống</h3>
-            <div className="space-y-4">
+          <div className="rounded-2xl glass p-5">
+            <h3 className="text-[15px] font-semibold text-white mb-4">Trạng thái hệ thống</h3>
+            <div className="space-y-3">
               {[
-                { name: "Gateway API",       status: "online" },
-                { name: "Identity Service",  status: "online" },
-                { name: "Order Service",     status: "online" },
-                { name: "Payment Service",   status: "online" },
-                { name: "Tracking Service",  status: "online" },
-                { name: "Notification",      status: "online" },
-                { name: "Kafka Cluster",     status: "online" },
-                { name: "Redis Cache",       status: "online" },
+                "Gateway API", "Identity Service", "Order Service",
+                "Payment Service", "Tracking Service", "Notification", "Kafka", "Redis",
               ].map((svc) => (
-                <div key={svc.name} className="flex items-center justify-between py-1">
+                <div key={svc} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/40" />
-                    <span className="text-[14px] text-slate-300">{svc.name}</span>
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/40" />
+                    <span className="text-[13px] text-slate-300">{svc}</span>
                   </div>
-                  <span className="text-[12px] text-emerald-500 font-mono">Online</span>
+                  <span className="text-[11px] text-emerald-500 font-mono">Online</span>
                 </div>
               ))}
             </div>
 
-            {/* Quick stats */}
             {!loading && stats && (
-              <div className="mt-6 pt-4 border-t border-white/[0.06] space-y-2">
-                <p className="text-[11px] text-slate-600 uppercase tracking-wide mb-3">Thống kê nhanh</p>
+              <div className="mt-5 pt-4 border-t border-white/[0.06] space-y-2.5">
+                <p className="text-[10px] text-slate-600 uppercase tracking-wider mb-2">Thống kê nhanh</p>
                 {[
                   { label: "Đang giao",  value: stats.deliveringOrders, color: "text-sky-400" },
                   { label: "Hoàn thành", value: stats.deliveredOrders,  color: "text-emerald-400" },

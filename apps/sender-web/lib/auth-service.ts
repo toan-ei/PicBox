@@ -64,14 +64,16 @@ export async function logout(): Promise<void> {
 
 // ─── Get current user display info ───────────────────────────────────────────
 
-export function getCurrentUser(): { name: string; email: string } | null {
+export function getCurrentUser(): { id: string; name: string; email: string; phone: string } | null {
   try {
     const raw = localStorage.getItem("user");
     if (!raw) return null;
     const u = JSON.parse(raw);
     return {
-      name: u.fullName || u.username || "Người dùng",
+      id:    u.id || "",
+      name:  u.fullName || u.username || "Người dùng",
       email: u.email || "",
+      phone: u.phone || "",
     };
   } catch {
     return null;

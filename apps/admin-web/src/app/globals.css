@@ -290,17 +290,15 @@ body {
 }
 
 /* ===== Sidebar layout offset =====
-   Sidebar is position:fixed so the main area needs manual padding-left on desktop.
-   Using padding-left prevents the flex-1 container from overflowing the right side.
-   276px = expanded (260 + 16px offset), 88px = collapsed (72 + 16px offset)
+   256px = expanded (240 + 16px offset), 80px = collapsed (64 + 16px offset)
 */
 @media (min-width: 1024px) {
   .sidebar-main-expanded {
-    padding-left: 276px !important;
+    padding-left: 256px !important;
   }
 
   .sidebar-main-collapsed {
-    padding-left: 88px !important;
+    padding-left: 80px !important;
   }
 }
 
