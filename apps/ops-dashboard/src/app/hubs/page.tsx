@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  MapPin, Package, Users, AlertTriangle, Plus, Activity,
-  LayoutDashboard, BarChart3, TrendingDown, TrendingUp,
+  MapPin, Package, AlertTriangle, Activity,
+  LayoutDashboard, BarChart3, CheckCircle, XCircle, Loader,
 } from "lucide-react";
+import { getAllHubsAndBranches } from "@picbox/utils";
+import type { AdminHub } from "@picbox/utils";
 
 function OpsSidebar({ active }: { active: string }) {
   const NAV = [
@@ -45,19 +47,21 @@ function OpsSidebar({ active }: { active: string }) {
   );
 }
 
-const HUBS = [
-  { id: "HUB-HCM-01", name: "Hub Trung Tâm Q1", type: "hub", capacity: 500, load: 320, shippers: { online: 18, total: 45 }, pendingOrders: 87, queuedDrivers: 2, status: "ok" },
-  { id: "HUB-HCM-02", name: "Hub Gò Vấp",       type: "hub", capacity: 300, load: 295, shippers: { online: 12, total: 28 }, pendingOrders: 63, queuedDrivers: 1, status: "full" },
-  { id: "HUB-BD-01",  name: "Hub Bình Dương",   type: "hub", capacity: 400, load: 210, shippers: { online: 15, total: 32 }, pendingOrders: 55, queuedDrivers: 0, status: "ok" },
-  { id: "BR-HCM-01",  name: "Chi nhánh Bình Thạnh", type: "branch", capacity: 150, load: 80, shippers: { online: 8, total: 15 }, pendingOrders: 24, queuedDrivers: 0, status: "ok" },
-  { id: "BR-HCM-02",  name: "Chi nhánh Tân Bình",   type: "branch", capacity: 200, load: 45, shippers: { online: 0, total: 18 }, pendingOrders: 31, queuedDrivers: 0, status: "maintenance" },
-  { id: "BR-LA-01",   name: "Chi nhánh Long An",    type: "branch", capacity: 120, load: 90, shippers: { online: 6, total: 10 }, pendingOrders: 18, queuedDrivers: 1, status: "ok" },
-];
-
 export default function OpsHubsPage() {
-  const totalCapacity = HUBS.reduce((s, h) => s + h.capacity, 0);
-  const totalLoad = HUBS.reduce((s, h) => s + h.load, 0);
-  const fullHubs = HUBS.filter((h) => h.status === "full").length;
+  const [hubs, setHubs]       = useState<AdminHub[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAllHubsAndBranches()
+      .then(setHubs)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const activeHubs    = hubs.filter(h => h.active);
+  const inactiveHubs  = hubs.filter(h => !h.active);
+  const hubCount      = hubs.filter(h => h.type === "hub").length;
+  const branchCount   = hubs.filter(h => h.type === "branch").length;
 
   return (
     <div className="min-h-screen bg-[#0c0800]">
@@ -67,96 +71,110 @@ export default function OpsHubsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-[20px] font-bold text-white">Quản lý Hub</h1>
-            <p className="text-[13px] text-slate-500 mt-0.5">Giám sát công suất và điều phối luồng hàng</p>
+            <p className="text-[13px] text-slate-500 mt-0.5">Giám sát trạng thái hub và chi nhánh trong mạng lưới</p>
           </div>
-          <button className="h-9 px-4 rounded-xl text-white text-[13px] font-semibold flex items-center gap-2 cursor-pointer transition-all hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #f59e0b, #fbbf24)" }}>
-            <Plus size={14} /> Thêm Hub
-          </button>
         </div>
 
-        {/* System KPI */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-5 stagger">
-          {[
-            { label: "Tổng công suất", value: totalCapacity, unit: "kiện", color: "#6366f1" },
-            { label: "Đang chứa", value: `${Math.round(totalLoad/totalCapacity*100)}%`, unit: `${totalLoad}/${totalCapacity}`, color: "#fbbf24" },
-            { label: "Hub đầy tải", value: fullHubs, unit: "hub", color: "#f87171" },
-            { label: "Hub hoạt động", value: HUBS.filter(h=>h.status==="ok").length, unit: "hub", color: "#34d399" },
-          ].map((s) => (
-            <div key={s.label} className="glass rounded-2xl p-4 animate-fadeIn">
-              <p className="text-[28px] font-bold text-white leading-none">{s.value}</p>
-              <p className="text-[11px] text-slate-600 mt-0.5">{s.unit}</p>
-              <p className="text-[11px] mt-2" style={{ color: s.color }}>{s.label}</p>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader size={24} className="text-amber-400 animate-spin" />
+          </div>
+        ) : (
+          <>
+            {/* Summary KPI */}
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-5 stagger">
+              {[
+                { label: "Tổng điểm",      value: hubs.length,       color: "#6366f1" },
+                { label: "Hub trung tâm",  value: hubCount,          color: "#fbbf24" },
+                { label: "Chi nhánh",      value: branchCount,       color: "#38bdf8" },
+                { label: "Đang hoạt động", value: activeHubs.length, color: "#34d399" },
+              ].map((s) => (
+                <div key={s.label} className="glass rounded-2xl p-4 animate-fadeIn">
+                  <p className="text-[28px] font-bold text-white leading-none">{s.value}</p>
+                  <p className="text-[11px] mt-2" style={{ color: s.color }}>{s.label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Hubs grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {HUBS.map((hub) => {
-            const loadPct = Math.round((hub.load / hub.capacity) * 100);
-            const loadColor = loadPct >= 90 ? "#f87171" : loadPct >= 70 ? "#fbbf24" : "#34d399";
-            const statusLabel = hub.status === "full" ? "Đầy tải" : hub.status === "maintenance" ? "Bảo trì" : "Hoạt động";
-            const statusColor = hub.status === "full" ? "text-amber-400" : hub.status === "maintenance" ? "text-slate-500" : "text-emerald-400";
-
-            return (
-              <div key={hub.id} className="glass rounded-2xl p-5 hover:border-amber-500/15 transition-all duration-200">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${hub.type === "hub" ? "bg-amber-500/[0.12]" : "bg-orange-500/[0.10]"}`}>
-                      <MapPin size={16} className={hub.type === "hub" ? "text-amber-400" : "text-orange-400"} />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-semibold text-white">{hub.name}</p>
-                      <p className="text-[10px] text-slate-600">{hub.id}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {hub.status === "full" && <AlertTriangle size={13} className="text-amber-400 animate-pulse" />}
-                    <span className={`text-[11px] font-semibold ${statusColor}`}>{statusLabel}</span>
-                  </div>
-                </div>
-
-                {/* Capacity bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between mb-1.5">
-                    <span className="text-[11px] text-slate-600">Công suất</span>
-                    <span className="text-[11px] font-bold" style={{ color: loadColor }}>{loadPct}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-white/[0.06]">
-                    <div className="h-full rounded-full transition-all"
-                      style={{ width: `${loadPct}%`, background: loadColor, boxShadow: `0 0 8px ${loadColor}40` }} />
-                  </div>
-                  <p className="text-[10px] text-slate-700 mt-1">{hub.load} / {hub.capacity} kiện</p>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="text-center rounded-xl bg-white/[0.03] border border-white/[0.04] py-2.5">
-                    <p className="text-[14px] font-bold text-white">{hub.shippers.online}</p>
-                    <p className="text-[9px] text-slate-600 mt-0.5">Online</p>
-                  </div>
-                  <div className="text-center rounded-xl bg-white/[0.03] border border-white/[0.04] py-2.5">
-                    <p className="text-[14px] font-bold text-white">{hub.pendingOrders}</p>
-                    <p className="text-[9px] text-slate-600 mt-0.5">Chờ giao</p>
-                  </div>
-                  <div className="text-center rounded-xl bg-white/[0.03] border border-white/[0.04] py-2.5">
-                    <p className="text-[14px] font-bold text-white">{hub.queuedDrivers}</p>
-                    <p className="text-[9px] text-slate-600 mt-0.5">Driver chờ</p>
-                  </div>
-                </div>
-
-                {/* Action */}
-                {hub.status === "full" && (
-                  <button className="w-full h-8 rounded-xl bg-amber-500/10 border border-amber-500/15 text-amber-400 text-[11px] font-semibold hover:bg-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5">
-                    <TrendingDown size={12} /> Chuyển tải sang hub khác
-                  </button>
-                )}
+            {/* Inactive alert */}
+            {inactiveHubs.length > 0 && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl mb-5 animate-fadeIn" style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)" }}>
+                <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
+                <p className="text-[13px] text-amber-300">
+                  <span className="font-bold">{inactiveHubs.length}</span> điểm không hoạt động: {inactiveHubs.map(h => h.name).join(", ")}
+                </p>
               </div>
-            );
-          })}
-        </div>
+            )}
+
+            {/* Hubs grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {hubs.map((hub) => (
+                <div key={hub.id} className="glass rounded-2xl p-5 hover:border-amber-500/15 transition-all duration-200 animate-fadeIn">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${hub.type === "hub" ? "bg-amber-500/[0.12]" : "bg-orange-500/[0.10]"}`}>
+                        <MapPin size={16} className={hub.type === "hub" ? "text-amber-400" : "text-orange-400"} />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-semibold text-white">{hub.name}</p>
+                        <p className="text-[10px] text-slate-600 capitalize">{hub.type === "hub" ? "Hub trung tâm" : "Chi nhánh"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {hub.active
+                        ? <><CheckCircle size={13} className="text-emerald-400" /><span className="text-[11px] font-semibold text-emerald-400">Hoạt động</span></>
+                        : <><XCircle size={13} className="text-rose-400" /><span className="text-[11px] font-semibold text-rose-400">Tạm ngừng</span></>
+                      }
+                    </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="space-y-2 mb-4">
+                    {hub.address && (
+                      <div className="flex items-start gap-2 text-[12px] text-slate-500">
+                        <MapPin size={12} className="text-slate-700 mt-0.5 flex-shrink-0" />
+                        <span className="line-clamp-2">{hub.address}</span>
+                      </div>
+                    )}
+                    {hub.province && (
+                      <div className="flex items-center gap-2 text-[12px] text-slate-500">
+                        <span className="text-[11px] px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/15 font-medium">
+                          {hub.province}
+                        </span>
+                      </div>
+                    )}
+                    {hub.contactPhone && (
+                      <a href={`tel:${hub.contactPhone}`} className="flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors">
+                        <span>📞</span> {hub.contactPhone}
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Capacity */}
+                  {hub.maxCapacity && (
+                    <div className="rounded-xl bg-white/[0.03] border border-white/[0.05] px-3 py-2.5 mb-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] text-slate-600">Công suất tối đa</span>
+                        <span className="text-[13px] font-bold text-amber-400">{hub.maxCapacity.toLocaleString()} kiện</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ID tag */}
+                  <p className="text-[10px] text-slate-700 font-mono">{hub.id}</p>
+                </div>
+              ))}
+            </div>
+
+            {hubs.length === 0 && (
+              <div className="text-center py-16 text-slate-600">
+                <MapPin size={40} className="mx-auto mb-3 opacity-30" />
+                <p className="text-[14px]">Không có hub nào</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Package, Truck, Clock, CheckCircle, XCircle, Search,
-  ChevronRight, LayoutDashboard, MapPin, BarChart3, Activity, Users, Bell,
+  ChevronRight, LayoutDashboard, MapPin, BarChart3, Activity, Loader,
 } from "lucide-react";
+import { getAllAdminOrders, getStaffList, assignOrderToShipper } from "@picbox/utils";
+import type { AdminOrder, StaffMember } from "@picbox/utils";
 
 function OpsSidebar({ active }: { active: string }) {
   const NAV = [
@@ -46,7 +48,7 @@ function OpsSidebar({ active }: { active: string }) {
           <div className="h-8 w-8 rounded-lg flex items-center justify-center text-[12px] font-bold text-white" style={{ background: "linear-gradient(135deg, #f59e0b, #fbbf24)" }}>O</div>
           <div>
             <p className="text-[12px] font-semibold text-white">Ops Manager</p>
-            <p className="text-[10px] text-slate-500">ops01@picbox.vn</p>
+            <p className="text-[10px] text-slate-500">ops@picbox.vn</p>
           </div>
         </div>
       </div>
@@ -56,39 +58,68 @@ function OpsSidebar({ active }: { active: string }) {
 
 type OrderStatus = "pending" | "confirmed" | "picking" | "delivering" | "delivered" | "failed" | "cancelled";
 
-const ORDERS = [
-  { id: "PB-20260020", customer: "Trần Văn Mới", zone: "Quận 7", shipper: null, cod: 250000, status: "pending" as OrderStatus, wait: "5 phút" },
-  { id: "PB-20260019", customer: "Lê Thị Oanh", zone: "Bình Thạnh", shipper: null, cod: 0, status: "pending" as OrderStatus, wait: "12 phút" },
-  { id: "PB-20260018", customer: "Phạm Duy Khoa", zone: "Quận 1", shipper: "Lê Văn Tùng", cod: 0, status: "delivering" as OrderStatus, wait: "—" },
-  { id: "PB-20260015", customer: "Phạm Minh Tuấn", zone: "Gò Vấp", shipper: null, cod: 180000, status: "confirmed" as OrderStatus, wait: "18 phút" },
-  { id: "PB-20260010", customer: "Mai Thị Linh", zone: "Tân Bình", shipper: "Võ Thị Mai", cod: 0, status: "delivered" as OrderStatus, wait: "—" },
-  { id: "PB-20260009", customer: "Ngô Quang Hùng", zone: "Quận 9", shipper: "Ngô Shipper", cod: 95000, status: "failed" as OrderStatus, wait: "—" },
-];
-
-const SHIPPERS_AVAILABLE = ["Lê Văn Tùng", "Đinh Thị Loan", "Trần Minh Khoa", "Bùi Văn An"];
-
-const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; border: string }> = {
-  pending:    { label: "Chờ xử lý",   color: "text-slate-400",   bg: "bg-slate-500/10",  border: "border-slate-500/15" },
-  confirmed:  { label: "Xác nhận",    color: "text-sky-400",     bg: "bg-sky-500/10",    border: "border-sky-500/15" },
-  picking:    { label: "Đang lấy",    color: "text-amber-400",   bg: "bg-amber-500/10",  border: "border-amber-500/15" },
-  delivering: { label: "Đang giao",   color: "text-blue-400",    bg: "bg-blue-500/10",   border: "border-blue-500/15" },
-  delivered:  { label: "Hoàn thành",  color: "text-emerald-400", bg: "bg-emerald-500/10",border: "border-emerald-500/15" },
-  failed:     { label: "Thất bại",    color: "text-rose-400",    bg: "bg-rose-500/10",   border: "border-rose-500/15" },
-  cancelled:  { label: "Đã huỷ",     color: "text-rose-400",    bg: "bg-rose-500/10",   border: "border-rose-500/15" },
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  pending:    { label: "Chờ xử lý",  color: "text-slate-400",   bg: "bg-slate-500/10",  border: "border-slate-500/15" },
+  confirmed:  { label: "Xác nhận",   color: "text-sky-400",     bg: "bg-sky-500/10",    border: "border-sky-500/15" },
+  picked_up:  { label: "Đang lấy",   color: "text-amber-400",   bg: "bg-amber-500/10",  border: "border-amber-500/15" },
+  out_for_delivery: { label: "Đang giao", color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/15" },
+  delivered:  { label: "Hoàn thành", color: "text-emerald-400", bg: "bg-emerald-500/10",border: "border-emerald-500/15" },
+  failed:     { label: "Thất bại",   color: "text-rose-400",    bg: "bg-rose-500/10",   border: "border-rose-500/15" },
+  cancelled:  { label: "Đã huỷ",    color: "text-rose-400",    bg: "bg-rose-500/10",   border: "border-rose-500/15" },
 };
 
+function timeSince(iso: string): string {
+  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 60) return `${secs}s`;
+  if (secs < 3600) return `${Math.floor(secs / 60)}ph`;
+  return `${Math.floor(secs / 3600)}h`;
+}
+
 export default function OpsOrdersPage() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [orders, setOrders]           = useState<AdminOrder[]>([]);
+  const [shippers, setShippers]       = useState<StaffMember[]>([]);
+  const [loading, setLoading]         = useState(true);
   const [assignModal, setAssignModal] = useState<string | null>(null);
   const [selectedShipper, setSelectedShipper] = useState("");
+  const [assigning, setAssigning]     = useState(false);
 
-  const filtered = ORDERS.filter((o) => {
+  useEffect(() => {
+    Promise.all([getAllAdminOrders(), getStaffList("SHIPPER")])
+      .then(([o, s]) => { setOrders(o); setShippers(s); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = orders.filter((o) => {
     const q = search.toLowerCase();
-    const matchSearch = o.id.toLowerCase().includes(q) || o.customer.toLowerCase().includes(q) || o.zone.toLowerCase().includes(q);
+    const matchSearch =
+      o.trackingCode.toLowerCase().includes(q) ||
+      o.receiverName.toLowerCase().includes(q) ||
+      (o.destBranchName || "").toLowerCase().includes(q);
     const matchStatus = statusFilter === "all" || o.status === statusFilter;
     return matchSearch && matchStatus;
   });
+
+  async function handleAssign() {
+    if (!assignModal || !selectedShipper) return;
+    setAssigning(true);
+    try {
+      await assignOrderToShipper(assignModal, selectedShipper);
+      setOrders(prev => prev.map(o =>
+        o.id === assignModal ? { ...o, shipperId: selectedShipper } : o
+      ));
+      setAssignModal(null);
+      setSelectedShipper("");
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setAssigning(false);
+    }
+  }
+
+  const needsAssign = orders.filter(o => !o.shipperId && ["pending", "confirmed"].includes(o.status)).length;
 
   return (
     <div className="min-h-screen bg-[#0c0800]">
@@ -102,112 +133,129 @@ export default function OpsOrdersPage() {
           </div>
           <div className="flex items-center gap-2 text-[12px] text-slate-500">
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-            {ORDERS.filter(o => o.status === "pending").length} đơn cần gán shipper
+            {needsAssign} đơn cần gán shipper
           </div>
         </div>
 
-        {/* Summary */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-5 stagger">
-          {[
-            { label: "Tổng đơn", value: ORDERS.length, icon: Package, color: "#6366f1" },
-            { label: "Cần gán", value: ORDERS.filter(o=>["pending","confirmed"].includes(o.status)).length, icon: Clock, color: "#fbbf24" },
-            { label: "Đang giao", value: ORDERS.filter(o=>o.status==="delivering").length, icon: Truck, color: "#38bdf8" },
-            { label: "Hoàn thành", value: ORDERS.filter(o=>o.status==="delivered").length, icon: CheckCircle, color: "#34d399" },
-          ].map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="glass rounded-2xl p-4 flex items-center gap-3 animate-fadeIn">
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: s.color + "15" }}>
-                  <Icon size={18} style={{ color: s.color }} />
-                </div>
-                <div>
-                  <p className="text-[24px] font-bold text-white leading-none">{s.value}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{s.label}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm mã đơn, khách hàng, khu vực..."
-              className="w-full h-9 rounded-xl pl-9 pr-4 text-[13px] text-slate-300 placeholder-slate-600 outline-none transition-all"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(251,191,36,0.08)" }}
-            />
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader size={24} className="text-amber-400 animate-spin" />
           </div>
-          <div className="flex gap-1.5 flex-wrap">
-            {["all", "pending", "delivering", "delivered", "failed"].map((s) => (
-              <button key={s} onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all cursor-pointer border ${
-                  statusFilter === s
-                    ? "bg-amber-500/15 text-amber-400 border-amber-500/25"
-                    : "text-slate-500 border-white/[0.06] hover:bg-white/[0.04]"
-                }`}
-              >
-                {s === "all" ? "Tất cả" : STATUS_CFG[s as OrderStatus]?.label ?? s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="glass rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr style={{ borderBottom: "1px solid rgba(251,191,36,0.06)" }}>
-                {["Mã đơn", "Khách hàng", "Khu vực", "Shipper", "COD", "Trạng thái", "Chờ", ""].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-600">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => {
-                const sc = STATUS_CFG[o.status];
+        ) : (
+          <>
+            {/* Summary */}
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-5 stagger">
+              {[
+                { label: "Tổng đơn",   value: orders.length,                                                              icon: Package,     color: "#6366f1" },
+                { label: "Cần gán",    value: orders.filter(o => ["pending","confirmed"].includes(o.status)).length,       icon: Clock,       color: "#fbbf24" },
+                { label: "Đang giao",  value: orders.filter(o => o.status === "out_for_delivery").length,                  icon: Truck,       color: "#38bdf8" },
+                { label: "Hoàn thành", value: orders.filter(o => o.status === "delivered").length,                         icon: CheckCircle, color: "#34d399" },
+              ].map((s) => {
+                const Icon = s.icon;
                 return (
-                  <tr key={o.id} className="hover:bg-white/[0.015] transition-colors" style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-                    <td className="px-4 py-3 text-[13px] font-semibold text-white">{o.id}</td>
-                    <td className="px-4 py-3 text-[13px] text-slate-300">{o.customer}</td>
-                    <td className="px-4 py-3 text-[12px] text-slate-500">{o.zone}</td>
-                    <td className="px-4 py-3 text-[12px]">
-                      {o.shipper
-                        ? <span className="text-slate-300">{o.shipper}</span>
-                        : <span className="text-amber-500/60 italic">Chưa gán</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3 text-[12px]">
-                      {o.cod > 0
-                        ? <span className="text-emerald-400 font-semibold">₫{o.cod.toLocaleString()}</span>
-                        : <span className="text-slate-700">—</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[11px] font-semibold px-2 py-1 rounded-lg border ${sc.color} ${sc.bg} ${sc.border}`}>
-                        {sc.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[11px] text-amber-400">{o.wait}</td>
-                    <td className="px-4 py-3">
-                      {!o.shipper && ["pending","confirmed"].includes(o.status) && (
-                        <button
-                          onClick={() => setAssignModal(o.id)}
-                          className="h-7 px-3 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/20 text-[11px] font-semibold hover:bg-amber-500/25 transition-all cursor-pointer flex items-center gap-1"
-                        >
-                          <Truck size={11} /> Gán
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                  <div key={s.label} className="glass rounded-2xl p-4 flex items-center gap-3 animate-fadeIn">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: s.color + "15" }}>
+                      <Icon size={18} style={{ color: s.color }} />
+                    </div>
+                    <div>
+                      <p className="text-[24px] font-bold text-white leading-none">{s.value}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{s.label}</p>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm mã đơn, khách hàng, khu vực..."
+                  className="w-full h-9 rounded-xl pl-9 pr-4 text-[13px] text-slate-300 placeholder-slate-600 outline-none transition-all"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(251,191,36,0.08)" }}
+                />
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {["all", "pending", "out_for_delivery", "delivered", "failed"].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all cursor-pointer border ${
+                      statusFilter === s
+                        ? "bg-amber-500/15 text-amber-400 border-amber-500/25"
+                        : "text-slate-500 border-white/[0.06] hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {s === "all" ? "Tất cả" : STATUS_CFG[s]?.label ?? s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="glass rounded-2xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(251,191,36,0.06)" }}>
+                    {["Mã đơn", "Người nhận", "Khu vực", "Shipper", "COD", "Trạng thái", "Chờ", ""].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-600">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-[13px] text-slate-600">Không có đơn nào</td>
+                    </tr>
+                  )}
+                  {filtered.map((o) => {
+                    const sc = STATUS_CFG[o.status] ?? STATUS_CFG["pending"];
+                    return (
+                      <tr key={o.id} className="hover:bg-white/[0.015] transition-colors" style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                        <td className="px-4 py-3 text-[13px] font-semibold text-white">{o.trackingCode}</td>
+                        <td className="px-4 py-3 text-[13px] text-slate-300">{o.receiverName}</td>
+                        <td className="px-4 py-3 text-[12px] text-slate-500">{o.destBranchName || o.receiverAddress.split(",")[0]}</td>
+                        <td className="px-4 py-3 text-[12px]">
+                          {o.shipperId
+                            ? <span className="text-slate-300">{shippers.find(s => s.userId === o.shipperId)?.fullName || o.shipperId.slice(0,8)}</span>
+                            : <span className="text-amber-500/60 italic">Chưa gán</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3 text-[12px]">
+                          {o.codAmount > 0
+                            ? <span className="text-emerald-400 font-semibold">₫{o.codAmount.toLocaleString()}</span>
+                            : <span className="text-slate-700">—</span>
+                          }
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[11px] font-semibold px-2 py-1 rounded-lg border ${sc.color} ${sc.bg} ${sc.border}`}>
+                            {sc.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-[11px] text-amber-400">{timeSince(o.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          {!o.shipperId && ["pending","confirmed"].includes(o.status) && (
+                            <button
+                              type="button"
+                              onClick={() => { setAssignModal(o.id); setSelectedShipper(""); }}
+                              className="h-7 px-3 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/20 text-[11px] font-semibold hover:bg-amber-500/25 transition-all cursor-pointer flex items-center gap-1"
+                            >
+                              <Truck size={11} /> Gán
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Assign modal */}
@@ -220,37 +268,51 @@ export default function OpsOrdersPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-[15px] font-bold text-white mb-1">Gán Shipper</h3>
-            <p className="text-[12px] text-slate-500 mb-4">Đơn hàng: <span className="text-amber-400 font-semibold">{assignModal}</span></p>
-            <div className="space-y-2 mb-4">
-              {SHIPPERS_AVAILABLE.map((s) => (
+            <p className="text-[12px] text-slate-500 mb-4">
+              Đơn: <span className="text-amber-400 font-semibold">{orders.find(o => o.id === assignModal)?.trackingCode}</span>
+            </p>
+            <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
+              {shippers.length === 0 && (
+                <p className="text-[13px] text-slate-600 text-center py-4">Không có shipper khả dụng</p>
+              )}
+              {shippers.map((s) => (
                 <button
-                  key={s}
-                  onClick={() => setSelectedShipper(s)}
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSelectedShipper(s.userId)}
                   className={`w-full text-left px-4 py-3 rounded-xl text-[13px] transition-all cursor-pointer border flex items-center gap-3 ${
-                    selectedShipper === s
+                    selectedShipper === s.userId
                       ? "bg-amber-500/15 border-amber-500/25 text-amber-300"
                       : "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]"
                   }`}
                 >
                   <div className="h-7 w-7 rounded-lg bg-amber-500/20 flex items-center justify-center text-[11px] font-bold text-amber-400 flex-shrink-0">
-                    {s.charAt(0)}
+                    {s.fullName.charAt(0)}
                   </div>
-                  {s}
-                  {selectedShipper === s && <CheckCircle size={14} className="ml-auto text-amber-400" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium truncate">{s.fullName}</p>
+                    {s.homeBaseName && <p className="text-[10px] text-slate-600 truncate">{s.homeBaseName}</p>}
+                  </div>
+                  {selectedShipper === s.userId && <CheckCircle size={14} className="ml-auto text-amber-400 flex-shrink-0" />}
                 </button>
               ))}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setAssignModal(null)} className="flex-1 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[13px] text-slate-400 hover:bg-white/[0.06] transition-all cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setAssignModal(null)}
+                className="flex-1 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-[13px] text-slate-400 hover:bg-white/[0.06] transition-all cursor-pointer"
+              >
                 Hủy
               </button>
               <button
-                disabled={!selectedShipper}
-                onClick={() => { setAssignModal(null); setSelectedShipper(""); }}
-                className="flex-1 h-10 rounded-xl text-white text-[13px] font-semibold disabled:opacity-40 cursor-pointer transition-all hover:opacity-90"
+                type="button"
+                disabled={!selectedShipper || assigning}
+                onClick={handleAssign}
+                className="flex-1 h-10 rounded-xl text-[13px] font-semibold transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg, #f59e0b, #fbbf24)" }}
               >
-                Xác nhận gán
+                {assigning ? <Loader size={14} className="animate-spin" /> : "Xác nhận gán"}
               </button>
             </div>
           </div>

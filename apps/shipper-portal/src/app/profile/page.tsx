@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  User, Phone, Mail, MapPin, Star, Package, Clock,
-  Bell, Shield, ChevronRight, LogOut, Camera,
-  Home, List, Wallet, TrendingUp, Edit3, Lock, HelpCircle,
+  Home, List, Wallet, User, Bell, BellOff, ChevronRight,
+  Package, Star, DollarSign, Shield, HelpCircle, LogOut, Loader,
 } from "lucide-react";
+import { getAuthState, clearAuthData, getMyOrders } from "@picbox/utils";
 
 function BottomNav({ active }: { active: string }) {
   const NAV = [
@@ -16,10 +17,8 @@ function BottomNav({ active }: { active: string }) {
     { href: "/profile", icon: User, label: "Tài khoản" },
   ];
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-2 py-2"
-      style={{ background: "rgba(4,12,28,0.97)", borderTop: "1px solid rgba(56,189,248,0.10)", backdropFilter: "blur(20px)" }}
-    >
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-2 py-2"
+      style={{ background: "rgba(4,12,28,0.97)", borderTop: "1px solid rgba(56,189,248,0.10)", backdropFilter: "blur(20px)" }}>
       {NAV.map((n) => {
         const Icon = n.icon;
         const isActive = n.href === active;
@@ -34,213 +33,136 @@ function BottomNav({ active }: { active: string }) {
   );
 }
 
-const PROFILE = {
-  name: "Ngô Văn Tùng",
-  phone: "0923 456 789",
-  email: "tung.ngo@shipper.picbox.vn",
-  area: "Bình Thạnh, TP.HCM",
-  joinDate: "15/01/2025",
-  vehicleType: "Xe máy",
-  plate: "59B1-23456",
-};
-
-const STATS = [
-  { label: "Tổng đơn", value: "1,247", icon: Package, color: "#38bdf8", bg: "rgba(56,189,248,0.10)" },
-  { label: "Đánh giá", value: "4.8", icon: Star, color: "#fbbf24", bg: "rgba(251,191,36,0.10)" },
-  { label: "Đúng giờ", value: "96%", icon: Clock, color: "#34d399", bg: "rgba(52,211,153,0.10)" },
-  { label: "Thu nhập tháng", value: "₫8.5M", icon: TrendingUp, color: "#a78bfa", bg: "rgba(167,139,250,0.10)" },
-];
-
-const MENU_ITEMS = [
-  { label: "Chỉnh sửa hồ sơ", icon: Edit3, href: "#" },
-  { label: "Đổi mật khẩu", icon: Lock, href: "#" },
-  { label: "Cài đặt thông báo", icon: Bell, href: "#" },
-  { label: "Bảo mật & Quyền riêng tư", icon: Shield, href: "#" },
-  { label: "Trung tâm hỗ trợ", icon: HelpCircle, href: "#" },
+const MENU = [
+  { icon: Package,    label: "Lịch sử đơn hàng",      href: "/orders",   color: "text-cyan-400",   bg: "bg-cyan-500/10" },
+  { icon: Wallet,     label: "Thu nhập & ví",           href: "/earnings", color: "text-emerald-400",bg: "bg-emerald-500/10" },
+  { icon: Star,       label: "Đánh giá của tôi",        href: "/ratings",  color: "text-amber-400",  bg: "bg-amber-500/10" },
+  { icon: Shield,     label: "Chính sách & điều khoản", href: "/policy",   color: "text-violet-400", bg: "bg-violet-500/10" },
+  { icon: HelpCircle, label: "Hỗ trợ",                  href: "/support",  color: "text-sky-400",    bg: "bg-sky-500/10" },
 ];
 
 export default function ShipperProfilePage() {
-  const [notifEnabled, setNotifEnabled] = useState(true);
+  const router = useRouter();
+  const [notifications, setNotifications] = useState(true);
+  const [totalDelivered, setTotalDelivered] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const auth = getAuthState();
+  const user = auth.user;
+  const userName = user?.fullName || "Shipper";
+  const initials = userName.split(" ").slice(-2).map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
+
+  useEffect(() => {
+    getMyOrders(0, 100)
+      .then(page => {
+        setTotalDelivered(page.orders.filter(o => o.status === "delivered").length);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  function handleLogout() {
+    clearAuthData();
+    router.push("/login");
+  }
 
   return (
     <div className="min-h-screen bg-[#020c18]">
-      {/* Background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #0ea5e9 0%, transparent 70%)", filter: "blur(60px)" }} />
-        <div className="absolute bottom-1/3 -right-32 w-80 h-80 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #06b6d4 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #0ea5e9 0%, transparent 70%)", filter: "blur(60px)" }} />
       </div>
 
       <div className="relative z-10 max-w-md mx-auto px-4 pt-6 pb-24">
-        {/* Header */}
-        <div className="mb-6 animate-fadeIn">
-          <h1 className="text-[20px] font-bold text-white">Tài khoản</h1>
-          <p className="text-[12px] text-slate-500 mt-0.5">Quản lý thông tin cá nhân của bạn</p>
-        </div>
-
-        {/* Profile card */}
-        <div
-          className="rounded-2xl p-5 mb-5 animate-slideUp"
-          style={{
-            background: "linear-gradient(135deg, rgba(14,165,233,0.18) 0%, rgba(6,182,212,0.12) 100%)",
-            border: "1px solid rgba(56,189,248,0.25)",
-            boxShadow: "0 8px 32px -8px rgba(14,165,233,0.3)",
-          }}
-        >
-          <div className="flex items-center gap-4">
-            {/* Avatar */}
-            <div className="relative">
-              <div
-                className="h-16 w-16 rounded-2xl flex items-center justify-center text-[22px] font-bold text-white"
-                style={{
-                  background: "linear-gradient(135deg, #0ea5e9, #06b6d4)",
-                  boxShadow: "0 4px 20px -4px rgba(14,165,233,0.5)",
-                }}
-              >
-                NT
-              </div>
-              <button
-                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-cyan-500 flex items-center justify-center border-2 border-[#020c18] cursor-pointer"
-                style={{ boxShadow: "0 2px 8px rgba(6,182,212,0.4)" }}
-              >
-                <Camera size={12} className="text-white" />
-              </button>
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <h2 className="text-[17px] font-bold text-white">{PROFILE.name}</h2>
-              <p className="text-[12px] text-cyan-300/60 mt-0.5">Shipper · Từ {PROFILE.joinDate}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Star size={12} className="text-amber-400" />
-                <span className="text-[12px] text-amber-400 font-semibold">4.8</span>
-                <span className="text-[10px] text-slate-500">/ 5.0</span>
-              </div>
-            </div>
+        {/* Avatar + name */}
+        <div className="flex flex-col items-center mb-6 animate-fadeIn">
+          <div
+            className="h-20 w-20 rounded-2xl flex items-center justify-center text-[28px] font-bold text-white mb-3"
+            style={{ background: "linear-gradient(135deg, #0ea5e9, #06b6d4)", boxShadow: "0 8px 24px -4px rgba(14,165,233,0.4)" }}
+          >
+            {initials}
+          </div>
+          <h1 className="text-[20px] font-bold text-white">{userName}</h1>
+          <p className="text-[13px] text-slate-500 mt-1">{user?.phone || user?.email || "Shipper PicBox"}</p>
+          <div className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[12px] font-semibold text-emerald-400">Đang hoạt động</span>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-5 stagger">
-          {STATS.map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="glass-card p-4 animate-fadeIn">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: s.bg }}>
-                    <Icon size={15} style={{ color: s.color }} />
-                  </div>
+        {loading ? (
+          <div className="flex justify-center py-4">
+            <Loader size={18} className="text-cyan-400 animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3 mb-5 animate-fadeIn">
+            {[
+              { label: "Đã giao", value: String(totalDelivered), icon: Package, color: "#38bdf8" },
+              { label: "Rating",  value: "4.8",                  icon: Star,    color: "#fbbf24" },
+              { label: "Tháng này", value: "₫0",                 icon: DollarSign, color: "#34d399" },
+            ].map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className="glass-card p-3 text-center">
+                  <Icon size={16} className="mx-auto mb-1.5" style={{ color: s.color }} />
+                  <p className="text-[16px] font-bold text-white leading-none">{s.value}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">{s.label}</p>
                 </div>
-                <p className="text-[22px] font-bold text-white leading-none">{s.value}</p>
-                <p className="text-[11px] text-slate-500 mt-1">{s.label}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Contact info */}
-        <div className="glass-card p-4 mb-4 animate-fadeIn">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">Thông tin liên hệ</p>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                <Phone size={14} className="text-cyan-400" />
-              </div>
-              <div>
-                <p className="text-[11px] text-slate-500">Số điện thoại</p>
-                <p className="text-[13px] font-medium text-white">{PROFILE.phone}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                <Mail size={14} className="text-cyan-400" />
-              </div>
-              <div>
-                <p className="text-[11px] text-slate-500">Email</p>
-                <p className="text-[13px] font-medium text-white">{PROFILE.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                <MapPin size={14} className="text-cyan-400" />
-              </div>
-              <div>
-                <p className="text-[11px] text-slate-500">Khu vực hoạt động</p>
-                <p className="text-[13px] font-medium text-white">{PROFILE.area}</p>
-              </div>
-            </div>
+              );
+            })}
           </div>
-        </div>
-
-        {/* Vehicle info */}
-        <div className="glass-card p-4 mb-4 animate-fadeIn">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">Phương tiện</p>
-          <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
-            <div className="flex items-center gap-2.5">
-              <span className="text-[18px]">🏍️</span>
-              <div>
-                <p className="text-[13px] font-semibold text-white">{PROFILE.vehicleType}</p>
-                <p className="text-[11px] text-slate-500 font-mono">{PROFILE.plate}</p>
-              </div>
-            </div>
-            <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-lg font-semibold">
-              Đã xác minh
-            </span>
-          </div>
-        </div>
+        )}
 
         {/* Notification toggle */}
         <div className="glass-card p-4 mb-4 animate-fadeIn">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                <Bell size={14} className="text-cyan-400" />
+              <div className="h-9 w-9 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                {notifications ? <Bell size={15} className="text-cyan-400" /> : <BellOff size={15} className="text-slate-500" />}
               </div>
               <div>
-                <p className="text-[13px] font-medium text-white">Thông báo đẩy</p>
-                <p className="text-[11px] text-slate-500">Nhận đơn mới & cập nhật</p>
+                <p className="text-[13px] font-semibold text-white">Thông báo đơn mới</p>
+                <p className="text-[11px] text-slate-500">{notifications ? "Đang bật" : "Đã tắt"}</p>
               </div>
             </div>
             <button
-              onClick={() => setNotifEnabled((v) => !v)}
-              className={`relative w-11 h-6 rounded-full transition-all duration-300 cursor-pointer ${notifEnabled ? "bg-cyan-500" : "bg-slate-700"}`}
+              type="button"
+              aria-label="Bật/tắt thông báo"
+              onClick={() => setNotifications(v => !v)}
+              className={`relative h-7 w-12 rounded-full transition-all duration-300 cursor-pointer ${notifications ? "bg-cyan-500" : "bg-slate-700"}`}
             >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-all duration-300 ${notifEnabled ? "left-[22px]" : "left-0.5"}`}
-              />
+              <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all duration-300 ${notifications ? "left-6" : "left-1"}`} />
             </button>
           </div>
         </div>
 
-        {/* Menu items */}
-        <div className="glass-card overflow-hidden mb-4 animate-fadeIn">
-          {MENU_ITEMS.map((item, i) => {
+        {/* Menu */}
+        <div className="glass-card divide-y divide-white/[0.04] mb-4 animate-fadeIn">
+          {MENU.map((item) => {
             const Icon = item.icon;
             return (
-              <button
-                key={item.label}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/[0.02] transition-colors cursor-pointer"
-                style={i > 0 ? { borderTop: "1px solid rgba(255,255,255,0.04)" } : undefined}
-              >
-                <Icon size={16} className="text-slate-500 flex-shrink-0" />
-                <span className="flex-1 text-[13px] text-slate-300">{item.label}</span>
-                <ChevronRight size={14} className="text-slate-700" />
-              </button>
+              <Link key={item.href} href={item.href} className="flex items-center justify-between p-4 hover:bg-white/[0.02] transition-all cursor-pointer press-effect">
+                <div className="flex items-center gap-3">
+                  <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${item.bg}`}>
+                    <Icon size={15} className={item.color} />
+                  </div>
+                  <span className="text-[13px] font-medium text-slate-300">{item.label}</span>
+                </div>
+                <ChevronRight size={14} className="text-slate-600" />
+              </Link>
             );
           })}
         </div>
 
-        {/* Logout */}
         <button
-          className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-[14px] font-semibold cursor-pointer transition-all press-effect animate-fadeIn"
-          style={{
-            background: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.15)",
-            color: "rgba(248,113,113,0.85)",
-          }}
+          type="button"
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl border border-rose-500/20 bg-rose-500/10 text-rose-400 text-[13px] font-semibold cursor-pointer hover:bg-rose-500/15 transition-all press-effect animate-fadeIn"
         >
-          <LogOut size={16} />
-          Đăng xuất
+          <LogOut size={16} /> Đăng xuất
         </button>
+
+        <p className="text-center text-[11px] text-slate-700 mt-4">PicBox Shipper v1.0.0</p>
       </div>
 
       <BottomNav active="/profile" />

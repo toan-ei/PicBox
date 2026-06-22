@@ -16,8 +16,9 @@ export {
   getDashboardStats,
 } from "./admin-api";
 export type { AdminUser, AdminHub, AdminOrder, DashboardStats } from "./admin-api";
-export {
-  getMyWallet, topUpWallet, adminCreditWallet,
+export { getStaffList, assignOrderToShipper } from "./staff-api";
+export type { StaffMember } from "./staff-api";
+export { getMyWallet, topUpWallet, adminCreditWallet,
   savePendingTopUp, getPendingTopUps, updateTopUpStatus,
   getUserNotifications,
 } from "./wallet-api";
