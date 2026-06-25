@@ -1,5 +1,6 @@
 package com.order.order_service.controller;
 
+import com.order.order_service.dto.request.AssignShipperRequest;
 import com.order.order_service.dto.request.CreateOrderRequest;
 import com.order.order_service.dto.request.UpdateOrderStatusRequest;
 import com.order.order_service.dto.response.ApiResponse;
@@ -79,6 +80,26 @@ public class OrderController {
         return ApiResponse.<OrderResponse>builder()
                 .code(0)
                 .result(orderService.updateStatus(orderId, jwt.getSubject(), request))
+                .build();
+    }
+
+    @GetMapping("/assigned")
+    public ApiResponse<PageResponse<OrderResponse>> getAssignedOrders(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.<PageResponse<OrderResponse>>builder()
+                .code(0)
+                .result(orderService.getAssignedOrders(jwt.getSubject(), page, size))
+                .build();
+    }
+
+    @PutMapping("/{orderId}/assign")
+    public ApiResponse<OrderResponse> assignShipper(@PathVariable String orderId,
+                                                    @Valid @RequestBody AssignShipperRequest request) {
+        return ApiResponse.<OrderResponse>builder()
+                .code(0)
+                .result(orderService.assignShipper(orderId, request.getShipperId()))
                 .build();
     }
 

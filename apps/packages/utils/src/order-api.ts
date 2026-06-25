@@ -203,6 +203,23 @@ export async function getMyOrders(page = 0, size = 50): Promise<OrderPage> {
   };
 }
 
+export async function getAssignedOrders(page = 0, size = 50): Promise<OrderPage> {
+  const { data } = await apiClient.get("/order/orders/assigned", {
+    params: { page, size },
+  });
+  if (data.code !== 1000 && data.code !== 0) {
+    throw new Error(data.message || "Không thể tải danh sách đơn được gán");
+  }
+  const pr = data.result as PageResponse<BackendOrder>;
+  return {
+    orders:        pr.content.map(adapt),
+    totalElements: pr.totalElements,
+    totalPages:    pr.totalPages,
+    page:          pr.page,
+    size:          pr.size,
+  };
+}
+
 export async function getOrder(orderId: string): Promise<Order> {
   const { data } = await apiClient.get(`/order/orders/${orderId}`);
   if (data.code !== 1000 && data.code !== 0) {

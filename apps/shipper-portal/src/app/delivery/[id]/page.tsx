@@ -60,7 +60,7 @@ export default function DeliveryDetailPage() {
     setUpdating(true);
     try {
       await updateOrderStatus(order.id, NEXT_STATUS[currentStep]);
-      setOrder(prev => prev ? { ...prev, status: STEPS[currentStep + 1]?.key ?? prev.status } : prev);
+      setOrder(prev => prev ? { ...prev, status: (STEPS[currentStep + 1]?.key ?? prev.status) as Order["status"] } : prev);
     } catch (e) {
       alert((e as Error).message);
     } finally {

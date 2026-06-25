@@ -7,7 +7,7 @@ import {
   Home, List, Wallet, User, Bell, BellOff, ChevronRight,
   Package, Star, DollarSign, Shield, HelpCircle, LogOut, Loader,
 } from "lucide-react";
-import { getAuthState, clearAuthData, getMyOrders } from "@picbox/utils";
+import { getAuthState, clearAuthData, getAssignedOrders } from "@picbox/utils";
 
 function BottomNav({ active }: { active: string }) {
   const NAV = [
@@ -53,7 +53,7 @@ export default function ShipperProfilePage() {
   const initials = userName.split(" ").slice(-2).map((w: string) => w[0]).join("").toUpperCase().slice(0, 2);
 
   useEffect(() => {
-    getMyOrders(0, 100)
+    getAssignedOrders(0, 100)
       .then(page => {
         setTotalDelivered(page.orders.filter(o => o.status === "delivered").length);
       })

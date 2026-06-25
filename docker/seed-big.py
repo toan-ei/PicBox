@@ -25,9 +25,12 @@ MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3307"))
 MYSQL_USER = os.getenv("MYSQL_USER", "dev")
 MYSQL_PASS = os.getenv("MYSQL_PASSWORD", "devpass")
 
-NUM_SENDERS = 200
-NUM_ORDERS  = 100_000
-BATCH_SIZE  = 5_000
+NUM_SENDERS  = 200
+NUM_ORDERS   = 100_000
+BATCH_SIZE   = 5_000
+NUM_OPS      = 10
+NUM_SHIPPERS = 50
+NUM_DRIVERS  = 20
 
 # ─── Password hash ────────────────────────────────────────────
 try:
@@ -188,7 +191,7 @@ def connect(db: str):
 
 # ─── Step 1: Senders ─────────────────────────────────────────
 def seed_senders():
-    print(f"\n[1/3] Tao {NUM_SENDERS} sender accounts...")
+    print(f"\n[1/4] Tao {NUM_SENDERS} sender accounts...")
     ci = connect("identity_service")
     cp = connect("profile_service")
     senders = []
@@ -238,9 +241,141 @@ def seed_senders():
     finally:
         ci.close(); cp.close()
 
-# ─── Step 2: Branch IDs ──────────────────────────────────────
+# ─── Step 2: Staff (OPS / SHIPPER / DRIVER) ──────────────────
+def seed_staff():
+    print(f"\n[2/4] Tao staff: {NUM_OPS} OPS + {NUM_SHIPPERS} SHIPPER + {NUM_DRIVERS} DRIVER...")
+    ci = connect("identity_service")
+    cp = connect("profile_service")
+    shippers = []
+
+    try:
+        curi = ci.cursor()
+        curp = cp.cursor()
+
+        staff_cfg = [
+            ("OPS",     NUM_OPS,      "ops",     "OPS@123"),
+            ("SHIPPER", NUM_SHIPPERS, "shipper", "Shipper@123"),
+            ("DRIVER",  NUM_DRIVERS,  "driver",  "Driver@123"),
+        ]
+
+        # Ensure all roles exist
+        for role, _, _, _ in staff_cfg:
+            curi.execute("INSERT IGNORE INTO role (name, description) VALUES (%s,%s)",
+                         (role, role))
+        ci.commit()
+
+        for role, count, prefix, pwd in staff_cfg:
+            try:
+                import bcrypt as _bc
+                phash = _bc.hashpw(pwd.encode(), _bc.gensalt(10)).decode()
+            except ImportError:
+                phash = PASSWORD_HASH
+
+            for i in range(count):
+                uid   = str(uuid.uuid4())
+                uname = f"{prefix}{i+1:03d}@picbox.vn"
+                fname = rname()
+                phone = rphone()
+
+                curi.execute(
+                    "INSERT IGNORE INTO `user` (id, username, password) VALUES (%s,%s,%s)",
+                    (uid, uname, phash),
+                )
+                curi.execute(
+                    "INSERT IGNORE INTO user_roles (user_id, roles_name) VALUES (%s,%s)",
+                    (uid, role),
+                )
+                curp.execute(
+                    """INSERT IGNORE INTO profile
+                       (id, user_id, full_name, phone_number, avatar, gender, address, dob)
+                       VALUES (%s,%s,%s,%s,'','','',NULL)""",
+                    (str(uuid.uuid4()), uid, fname, phone),
+                )
+                if role == "SHIPPER":
+                    shippers.append(uid)
+
+            ci.commit(); cp.commit()
+            print(f"  + {count} {role}")
+
+        print(f"  [OK] staff tao xong ({len(shippers)} shippers)")
+
+        # Seed staff_service.staff (rieng biet voi identity_service)
+        _seed_staff_service(curi, curp)
+
+        return shippers
+    finally:
+        ci.close(); cp.close()
+
+def _seed_staff_service(curi, curp):
+    """Dong bo identity users -> staff_service.staff."""
+    try:
+        cs = connect("staff_service")
+        curs = cs.cursor()
+
+        # Lay hub IDs lam homeBase (neu chua co branch)
+        ch = connect("hub_branch_service")
+        curh = ch.cursor()
+        hub_ids = []
+        for tbl in ("branches", "branch"):
+            try:
+                curh.execute(f"SELECT id FROM `{tbl}` LIMIT 20")
+                rows = curh.fetchall()
+                if rows:
+                    hub_ids = [r[0] for r in rows]
+                    break
+            except Exception:
+                pass
+        if not hub_ids:
+            curh.execute("SELECT id FROM hubs LIMIT 10")
+            hub_ids = [r[0] for r in curh.fetchall()]
+        ch.close()
+
+        if not hub_ids:
+            print("  [SKIP] staff_service: khong co hub/branch de lam homeBase")
+            cs.close()
+            return
+
+        staff_role_map = {"SHIPPER": "SHIPPER", "DRIVER": "DRIVER", "OPS": "HUB_STAFF"}
+        base_type_map  = {"SHIPPER": "HUB",     "DRIVER": "HUB",    "OPS": "HUB"}
+        now = datetime.now()
+        rows = []
+
+        for identity_role, staff_role in staff_role_map.items():
+            curi.execute('''
+                SELECT u.id, u.username, p.full_name, p.phone_number
+                FROM `user` u
+                JOIN user_roles ur ON u.id = ur.user_id
+                LEFT JOIN profile_service.profile p ON p.user_id = u.id
+                WHERE ur.roles_name = %s
+            ''', (identity_role,))
+            users = curi.fetchall()
+            for idx, (uid, uname, fname, phone) in enumerate(users):
+                home_base_id = hub_ids[idx % len(hub_ids)]
+                rows.append((
+                    str(uuid.uuid4()), uid,
+                    fname or uname, phone or '',
+                    uname if '@' in uname else '',
+                    staff_role, home_base_id,
+                    base_type_map[identity_role],
+                    'ACTIVE', now, now,
+                ))
+
+        if rows:
+            curs.executemany('''
+                INSERT IGNORE INTO staff
+                (id, user_id, full_name, phone, email, role,
+                 home_base_id, home_base_type, status, created_at, updated_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ''', rows)
+            cs.commit()
+            print(f"  [OK] {len(rows)} records trong staff_service.staff")
+        cs.close()
+    except Exception as e:
+        print(f"  [WARN] staff_service seed that bai: {e}")
+
+# ─── Step 3: Branch IDs ──────────────────────────────────────
 def load_branches():
-    print("\n[2/3] Tim branch IDs...")
+    print("\n[3/4] Tim branch IDs...")
     for tbl in ("branch", "branches"):
         try:
             ch  = connect("hub_branch_service")
@@ -260,8 +395,8 @@ def load_branches():
     return FALLBACK_BRANCHES
 
 # ─── Step 3: Orders ──────────────────────────────────────────
-def seed_orders(senders, branches):
-    print(f"\n[3/3] Tao {NUM_ORDERS:,} don hang (batch {BATCH_SIZE:,})...")
+def seed_orders(senders, branches, shippers):
+    print(f"\n[4/4] Tao {NUM_ORDERS:,} don hang (batch {BATCH_SIZE:,})...")
     co  = connect("order_service")
     cur = co.cursor()
 
@@ -306,10 +441,10 @@ def seed_orders(senders, branches):
             created = rdate(365)
             region  = REGION_MAP.get(recv_prov, "MN")
 
-            # Don da giao/that bai co the co shipper_id (fake)
+            # Don da giao/that bai gan shipper that tu danh sach da seed
             shipper_id = None
             if status in ("OUT_FOR_DELIVERY", "DELIVERED", "DELIVERY_FAILED", "RETURNED"):
-                shipper_id = str(uuid.uuid4())
+                shipper_id = random.choice(shippers) if shippers else str(uuid.uuid4())
 
             orows.append((
                 oid, tcode,
@@ -395,8 +530,9 @@ def main():
     t0 = datetime.now()
 
     senders  = seed_senders()
+    shippers = seed_staff()
     branches = load_branches()
-    seed_orders(senders, branches)
+    seed_orders(senders, branches, shippers)
     seed_wallets(senders)
 
     elapsed = (datetime.now() - t0).total_seconds()
@@ -404,9 +540,11 @@ def main():
     print("\n" + "=" * 60)
     print("  SEED HOAN THANH!")
     print("=" * 60)
-    print(f"  Senders : seeder0001@picbox.vn  ->  seeder{NUM_SENDERS:04d}@picbox.vn")
-    print(f"  Password: Sender@123")
-    print(f"  Orders  : {NUM_ORDERS:,} don — 14 trang thai phan bo thuc te")
+    print(f"  Senders : seeder0001@picbox.vn -> seeder{NUM_SENDERS:04d}@picbox.vn  (Sender@123)")
+    print(f"  OPS     : ops001@picbox.vn -> ops{NUM_OPS:03d}@picbox.vn              (OPS@123)")
+    print(f"  Shippers: shipper001@picbox.vn -> shipper{NUM_SHIPPERS:03d}@picbox.vn (Shipper@123)")
+    print(f"  Drivers : driver001@picbox.vn -> driver{NUM_DRIVERS:03d}@picbox.vn    (Driver@123)")
+    print(f"  Orders  : {NUM_ORDERS:,} don voi 14 trang thai phan bo thuc te")
     print(f"  Thoi gian: {elapsed:.1f}s")
     print("=" * 60)
     print()

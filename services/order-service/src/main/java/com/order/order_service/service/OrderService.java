@@ -101,6 +101,20 @@ public class OrderService {
         return orderMapper.toResponse(order);
     }
 
+    public PageResponse<OrderResponse> getAssignedOrders(String shipperId, int page, int size) {
+        Page<Order> result = orderRepository.findByShipperId(shipperId,
+                PageRequest.of(page, size, Sort.by("createdAt").descending()));
+        return toPageResponse(result, page, size);
+    }
+
+    @Transactional
+    public OrderResponse assignShipper(String orderId, String shipperId) {
+        Order order = findOrThrow(orderId);
+        order.setShipperId(shipperId);
+        orderRepository.save(order);
+        return orderMapper.toResponse(order);
+    }
+
     @Transactional
     public void cancelOrder(String orderId, String cancelledBy) {
         Order order = findOrThrow(orderId);

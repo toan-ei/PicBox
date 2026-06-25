@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Package, Clock, CheckCircle, AlertCircle, Truck, ChevronRight, Search, Home, List, Wallet, User, Loader } from "lucide-react";
-import { getMyOrders } from "@picbox/utils";
+import { getAssignedOrders } from "@picbox/utils";
 import type { Order } from "@picbox/types";
 
 function BottomNav({ active }: { active: string }) {
@@ -66,7 +66,7 @@ export default function ShipperOrdersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMyOrders(0, 100)
+    getAssignedOrders(0, 100)
       .then(page => setOrders(page.orders))
       .catch(console.error)
       .finally(() => setLoading(false));

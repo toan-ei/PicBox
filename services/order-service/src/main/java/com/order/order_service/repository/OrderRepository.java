@@ -11,6 +11,7 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, String> {
     Optional<Order> findByTrackingCode(String trackingCode);
     Page<Order> findBySenderId(String senderId, Pageable pageable);
+    Page<Order> findByShipperId(String shipperId, Pageable pageable);
     Page<Order> findByStatus(OrderStatus status, Pageable pageable);
     Page<Order> findByDestBranchIdAndStatus(String destBranchId, OrderStatus status, Pageable pageable);
     boolean existsByTrackingCode(String trackingCode);

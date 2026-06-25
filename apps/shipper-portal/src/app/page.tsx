@@ -7,7 +7,7 @@ import {
   ChevronRight, Clock, CheckCircle, AlertCircle, Home, List, Wallet, User,
   Navigation, TrendingUp, Loader,
 } from "lucide-react";
-import { getMyOrders, getAuthState } from "@picbox/utils";
+import { getAssignedOrders, getAuthState } from "@picbox/utils";
 import type { Order } from "@picbox/types";
 
 const NAV = [
@@ -71,7 +71,7 @@ export default function ShipperDashboard() {
   const initials = userName.split(" ").slice(-2).map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   useEffect(() => {
-    getMyOrders(0, 100)
+    getAssignedOrders(0, 100)
       .then(page => setOrders(page.orders))
       .catch(console.error)
       .finally(() => setLoading(false));

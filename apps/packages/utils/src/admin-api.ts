@@ -71,13 +71,10 @@ function adaptAdminOrder(o: any): AdminOrder {
 // ─── Orders ───────────────────────────────────────────────────────────────────
 
 const ADMIN_STATUSES = [
-  "PENDING",
-  "CONFIRMED",
-  "PICKED_UP",
-  "OUT_FOR_DELIVERY",
-  "DELIVERED",
-  "DELIVERY_FAILED",
-  "CANCELLED",
+  "PENDING", "CONFIRMED", "PICKED_UP",
+  "AT_ORIGIN_BRANCH", "IN_TRANSIT_TO_HUB", "AT_HUB",
+  "IN_TRANSIT_TO_DEST_HUB", "AT_DEST_HUB", "IN_TRANSIT_TO_DEST_BRANCH",
+  "AT_DEST_BRANCH", "OUT_FOR_DELIVERY", "DELIVERED", "DELIVERY_FAILED", "CANCELLED",
 ];
 
 export async function getAllAdminOrders(): Promise<AdminOrder[]> {
@@ -261,6 +258,34 @@ export interface DashboardStats {
   failedOrders: number;
   totalUsers: number;
   totalShippers: number;
+}
+
+const TRANSIT_STATUSES = [
+  "AT_ORIGIN_BRANCH", "IN_TRANSIT_TO_HUB", "AT_HUB",
+  "IN_TRANSIT_TO_DEST_HUB", "AT_DEST_HUB", "IN_TRANSIT_TO_DEST_BRANCH", "AT_DEST_BRANCH",
+];
+
+export async function getInTransitOrders(): Promise<AdminOrder[]> {
+  const results = await Promise.allSettled(
+    TRANSIT_STATUSES.map((s) =>
+      apiClient.get(`/order/orders/status/${s}`, { params: { page: 0, size: 100 } })
+    )
+  );
+  const orders: AdminOrder[] = [];
+  for (const r of results) {
+    if (r.status === "fulfilled") {
+      const content = r.value.data?.result?.content ?? [];
+      orders.push(...content.map(adaptAdminOrder));
+    }
+  }
+  orders.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  return orders;
+}
+
+export async function getAdminOrder(orderId: string): Promise<AdminOrder> {
+  const { data } = await apiClient.get(`/order/orders/${orderId}`);
+  if (data.code !== 0 && data.code !== 1000) throw new Error(data.message || "Không tìm thấy đơn hàng");
+  return adaptAdminOrder(data.result);
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {

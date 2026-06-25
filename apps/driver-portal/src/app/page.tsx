@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Truck, Package, MapPin, Clock, CheckCircle, ChevronRight,
-  Navigation, Home, Map, ArrowLeftRight, User, Calendar,
-  AlertTriangle, Phone, Shield,
+  Home, Map, ArrowLeftRight, User, AlertTriangle, Phone, Loader,
 } from "lucide-react";
+import { getInTransitOrders, getAuthState } from "@picbox/utils";
+import type { AdminOrder } from "@picbox/utils";
 
 function BottomNav({ active }: { active: string }) {
   const NAV = [
@@ -46,33 +47,37 @@ function BottomNav({ active }: { active: string }) {
   );
 }
 
-const TODAY_TRIP = {
-  id: "TRIP-0514-01",
-  from: { hub: "Hub Trung Tâm HCM", address: "Quận 1, TP.HCM" },
-  to:   { hub: "Hub Gò Vấp", address: "Gò Vấp, TP.HCM" },
-  parcels: 48,
-  weight: 120,
-  departAt: "08:00",
-  arriveAt: "~11:30",
-  status: "in-progress" as const,
-  progress: 65,
-  vehicle: "51B-12345",
+const STATUS_LABEL: Record<string, string> = {
+  AT_ORIGIN_BRANCH:          "Chờ lấy hàng",
+  IN_TRANSIT_TO_HUB:         "Đang vận chuyển đến Hub",
+  AT_HUB:                    "Tại Hub",
+  IN_TRANSIT_TO_DEST_HUB:    "Hub → Hub",
+  AT_DEST_HUB:               "Tại Hub đích",
+  IN_TRANSIT_TO_DEST_BRANCH: "Đang vận chuyển đến CN",
+  AT_DEST_BRANCH:            "Tại CN đích",
 };
 
-const STATS = [
-  { label: "Chuyến hôm nay", value: "2", icon: Truck, color: "#34d399", bg: "rgba(52,211,153,0.10)" },
-  { label: "Kiện hàng", value: "86", icon: Package, color: "#6ee7b7", bg: "rgba(110,231,183,0.10)" },
-  { label: "Tổng tuần", value: "8", icon: Calendar, color: "#a7f3d0", bg: "rgba(167,243,208,0.10)" },
-  { label: "Đúng giờ", value: "97%", icon: Clock, color: "#d1fae5", bg: "rgba(209,250,229,0.10)" },
-];
-
-const RECENT_TRIPS = [
-  { id: "TRIP-0514-00", from: "Hub Q1", to: "Hub Bình Dương", parcels: 38, status: "done", time: "07:00", weight: 95 },
-  { id: "TRIP-0513-01", from: "Hub GV", to: "Hub Q1", parcels: 52, status: "done", time: "Hôm qua", weight: 130 },
-];
-
 export default function DriverDashboard() {
-  const [checkingIn, setCheckingIn] = useState(false);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sosModal, setSosModal] = useState(false);
+
+  const auth = getAuthState();
+  const userName = auth.user?.fullName || "Tài xế";
+
+  useEffect(() => {
+    getInTransitOrders()
+      .then(setOrders)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const activeOrders = orders.filter(o =>
+    ["IN_TRANSIT_TO_HUB", "IN_TRANSIT_TO_DEST_HUB", "IN_TRANSIT_TO_DEST_BRANCH"].includes(o.backendStatus)
+  );
+  const waitingOrders = orders.filter(o =>
+    ["AT_ORIGIN_BRANCH", "AT_HUB", "AT_DEST_HUB", "AT_DEST_BRANCH"].includes(o.backendStatus)
+  );
 
   return (
     <div className="min-h-screen bg-[#020f0a]">
@@ -86,199 +91,193 @@ export default function DriverDashboard() {
         <div className="flex items-center justify-between mb-6 animate-fadeIn">
           <div>
             <p className="text-[12px] text-slate-500">Xin chào,</p>
-            <h1 className="text-[20px] font-bold text-white">Đặng Văn Driver 🚚</h1>
+            <h1 className="text-[20px] font-bold text-white">{userName} 🚚</h1>
           </div>
           <div className="text-right">
             <p className="text-[11px] text-slate-600" suppressHydrationWarning>
               {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}
             </p>
             <div className="flex items-center gap-1.5 justify-end mt-0.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse-dot" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.6)" }} />
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.6)" }} />
               <p className="text-[11px] text-emerald-400 font-semibold">Đang hoạt động</p>
             </div>
           </div>
         </div>
 
-        {/* Active trip card */}
-        <Link href={`/trips/${TODAY_TRIP.id}`}>
-          <div
-            className="rounded-2xl p-5 mb-5 cursor-pointer hover:scale-[1.01] transition-all duration-300 animate-slideUp press-effect"
-            style={{
-              background: "linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(52,211,153,0.10) 100%)",
-              border: "1px solid rgba(52,211,153,0.25)",
-              boxShadow: "0 8px 32px -8px rgba(16,185,129,0.3)",
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center animate-float">
-                  <Truck size={16} className="text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-emerald-300/70 uppercase tracking-wider font-semibold">Chuyến đang chạy</p>
-                  <p className="text-[14px] font-bold text-white">{TODAY_TRIP.id}</p>
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/25 px-2.5 py-1 rounded-lg font-semibold">
-                  Đang di chuyển
-                </span>
-                <span className="text-[10px] text-slate-500">{TODAY_TRIP.vehicle}</span>
-              </div>
-            </div>
-
-            {/* Route */}
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[8px] font-bold text-emerald-400">A</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-white truncate">{TODAY_TRIP.from.hub}</p>
-                  <p className="text-[10px] text-slate-500">{TODAY_TRIP.from.address} · {TODAY_TRIP.departAt}</p>
-                </div>
-              </div>
-              <div className="ml-3 flex items-center gap-2">
-                <div className="w-px h-5 bg-slate-700" />
-                <div className="flex-1 h-px bg-gradient-to-r from-emerald-500/30 via-sky-500/20 to-transparent" />
-                <span className="text-[9px] text-slate-600">ETA {TODAY_TRIP.arriveAt}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="h-6 w-6 rounded-full bg-sky-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[8px] font-bold text-sky-400">B</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-white truncate">{TODAY_TRIP.to.hub}</p>
-                  <p className="text-[10px] text-slate-500">{TODAY_TRIP.to.address}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress */}
-            <div className="mb-3">
-              <div className="flex justify-between mb-1.5">
-                <span className="text-[11px] text-emerald-300/70">Tiến trình</span>
-                <span className="text-[11px] font-bold text-emerald-400">{TODAY_TRIP.progress}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-white/[0.08]">
-                <div
-                  className="h-full rounded-full transition-all duration-700 animate-progress-glow"
-                  style={{
-                    width: `${TODAY_TRIP.progress}%`,
-                    background: "linear-gradient(90deg, #10b981, #34d399)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid rgba(52,211,153,0.10)" }}>
-              <span className="text-[12px] text-slate-400">{TODAY_TRIP.parcels} kiện · {TODAY_TRIP.weight} kg</span>
-              <div className="flex items-center gap-1 text-emerald-400 text-[12px] font-semibold">
-                Chi tiết <ChevronRight size={14} />
-              </div>
-            </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader size={20} className="text-emerald-400 animate-spin" />
           </div>
-        </Link>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-5 stagger">
-          {STATS.map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="glass-card p-4 animate-fadeIn">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: s.bg }}>
-                    <Icon size={14} style={{ color: s.color }} />
+        ) : (
+          <>
+            {/* Active trip card */}
+            {activeOrders.length > 0 && (
+              <Link href="/trips">
+                <div
+                  className="rounded-2xl p-5 mb-5 cursor-pointer hover:scale-[1.01] transition-all duration-300 animate-slideUp press-effect"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(16,185,129,0.18) 0%, rgba(52,211,153,0.10) 100%)",
+                    border: "1px solid rgba(52,211,153,0.25)",
+                    boxShadow: "0 8px 32px -8px rgba(16,185,129,0.3)",
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-9 w-9 rounded-xl bg-emerald-500/20 flex items-center justify-center animate-float">
+                        <Truck size={16} className="text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-emerald-300/70 uppercase tracking-wider font-semibold">Đang vận chuyển</p>
+                        <p className="text-[14px] font-bold text-white">{activeOrders.length} kiện hàng</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/25 px-2.5 py-1 rounded-lg font-semibold">
+                      Đang di chuyển
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid rgba(52,211,153,0.10)" }}>
+                    <span className="text-[12px] text-slate-400">{STATUS_LABEL[activeOrders[0].backendStatus]}</span>
+                    <div className="flex items-center gap-1 text-emerald-400 text-[12px] font-semibold">
+                      Xem chi tiết <ChevronRight size={14} />
+                    </div>
                   </div>
                 </div>
-                <p className="text-[22px] font-bold text-white leading-none">{s.value}</p>
-                <p className="text-[11px] text-slate-500 mt-1">{s.label}</p>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Check-in section */}
-        <div className="glass-card p-4 mb-4 animate-fadeIn">
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-              <MapPin size={15} className="text-emerald-400" />
-            </div>
-            <div>
-              <h3 className="text-[13px] font-semibold text-white">Check-in Hub</h3>
-              <p className="text-[10px] text-slate-500">Bạn đang ở gần Hub Gò Vấp</p>
-            </div>
-          </div>
-          <p className="text-[12px] text-slate-500 mb-3">Xác nhận check-in để bắt đầu bốc dỡ hàng tại hub.</p>
-          <button
-            onClick={() => {
-              setCheckingIn(true);
-              setTimeout(() => setCheckingIn(false), 2000);
-            }}
-            disabled={checkingIn}
-            className="w-full h-12 rounded-2xl text-white text-[13px] font-bold flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #10b981, #34d399)", boxShadow: "0 4px 16px -4px rgba(16,185,129,0.5)" }}
-          >
-            {checkingIn ? (
-              <>
-                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Đang xác nhận...
-              </>
-            ) : (
-              <>
-                <CheckCircle size={16} /> Check-in Hub Gò Vấp
-              </>
+              </Link>
             )}
-          </button>
-        </div>
 
-        {/* SOS Button */}
-        <div className="glass-card p-4 mb-4 animate-fadeIn" style={{ border: "1px solid rgba(239,68,68,0.10)" }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-rose-500/10 flex items-center justify-center">
-                <AlertTriangle size={15} className="text-rose-400" />
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3 mb-5 stagger">
+              {[
+                { label: "Đang vận chuyển", value: activeOrders.length,  icon: Truck,   color: "#34d399", bg: "rgba(52,211,153,0.10)" },
+                { label: "Chờ xử lý",       value: waitingOrders.length, icon: Clock,   color: "#6ee7b7", bg: "rgba(110,231,183,0.10)" },
+                { label: "Tổng hàng quản lý",value: orders.length,        icon: Package, color: "#a7f3d0", bg: "rgba(167,243,208,0.10)" },
+                { label: "Tại Hub / CN",     value: waitingOrders.filter(o => ["AT_HUB","AT_DEST_HUB"].includes(o.backendStatus)).length, icon: MapPin, color: "#d1fae5", bg: "rgba(209,250,229,0.10)" },
+              ].map((s) => {
+                const Icon = s.icon;
+                return (
+                  <div key={s.label} className="glass-card p-4 animate-fadeIn">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: s.bg }}>
+                        <Icon size={14} style={{ color: s.color }} />
+                      </div>
+                    </div>
+                    <p className="text-[22px] font-bold text-white leading-none">{s.value}</p>
+                    <p className="text-[11px] text-slate-500 mt-1">{s.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Waiting orders */}
+            {waitingOrders.length > 0 && (
+              <div className="glass-card p-4 mb-4 animate-fadeIn">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-9 w-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <MapPin size={15} className="text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-[13px] font-semibold text-white">Hàng đang chờ xử lý</h3>
+                      <p className="text-[10px] text-slate-500">{waitingOrders.length} đơn tại Hub / Chi nhánh</p>
+                    </div>
+                  </div>
+                  <Link href="/trips" className="text-[11px] text-emerald-400 flex items-center gap-0.5 press-effect">
+                    Xem <ChevronRight size={12} />
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {waitingOrders.slice(0, 3).map((o) => (
+                    <Link key={o.id} href={`/trips/${o.id}`}>
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all cursor-pointer press-effect">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                            <Package size={13} className="text-emerald-500" />
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-semibold text-white">{o.trackingCode}</p>
+                            <p className="text-[10px] text-slate-600">{STATUS_LABEL[o.backendStatus]}</p>
+                          </div>
+                        </div>
+                        <ChevronRight size={14} className="text-slate-700" />
+                      </div>
+                    </Link>
+                  ))}
+                  {waitingOrders.length > 3 && (
+                    <p className="text-[11px] text-slate-600 text-center pt-1">+{waitingOrders.length - 3} đơn khác</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <h3 className="text-[13px] font-semibold text-white">Báo sự cố</h3>
-                <p className="text-[10px] text-slate-500">Xe hỏng, tai nạn, mất hàng...</p>
+            )}
+
+            {/* No orders */}
+            {orders.length === 0 && (
+              <div className="glass-card p-6 text-center animate-fadeIn mb-4">
+                <Package size={32} className="mx-auto mb-3 text-slate-700" />
+                <p className="text-[14px] text-slate-500">Không có hàng đang trung chuyển</p>
+                <p className="text-[12px] text-slate-600 mt-1">Liên hệ Ops để nhận chuyến hàng mới</p>
+              </div>
+            )}
+
+            {/* SOS Button */}
+            <div className="glass-card p-4 animate-fadeIn" style={{ border: "1px solid rgba(239,68,68,0.10)" }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-9 w-9 rounded-xl bg-rose-500/10 flex items-center justify-center">
+                    <AlertTriangle size={15} className="text-rose-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-[13px] font-semibold text-white">Báo sự cố</h3>
+                    <p className="text-[10px] text-slate-500">Xe hỏng, tai nạn, mất hàng...</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSosModal(true)}
+                  className="h-10 px-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[12px] font-semibold cursor-pointer press-effect flex items-center gap-1.5"
+                >
+                  <Phone size={12} /> SOS
+                </button>
               </div>
             </div>
-            <button className="h-10 px-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[12px] font-semibold cursor-pointer press-effect flex items-center gap-1.5">
-              <Phone size={12} /> SOS
+          </>
+        )}
+      </div>
+
+      <BottomNav active="/" />
+
+      {sosModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setSosModal(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md rounded-t-3xl p-6 animate-slideUp"
+            style={{ background: "rgba(5,18,12,0.98)", border: "1px solid rgba(239,68,68,0.15)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full bg-slate-700 mx-auto mb-5" />
+            <h3 className="text-[16px] font-bold text-white mb-1">Báo sự cố khẩn cấp</h3>
+            <p className="text-[12px] text-slate-500 mb-4">Chọn loại sự cố để thông báo cho trung tâm điều hành</p>
+            <div className="space-y-2 mb-5">
+              {[
+                { label: "Xe hỏng / hư hại",       icon: "🚛" },
+                { label: "Tai nạn giao thông",      icon: "🚨" },
+                { label: "Seal bị phá / hàng mất",  icon: "📦" },
+                { label: "Kẹt đường nghiêm trọng",  icon: "🚧" },
+                { label: "Vấn đề khác",              icon: "❓" },
+              ].map((r) => (
+                <button key={r.label}
+                  className="w-full text-left px-4 py-3.5 rounded-xl text-[13px] bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:bg-rose-500/[0.06] hover:border-rose-500/20 hover:text-rose-300 transition-all cursor-pointer press-effect flex items-center gap-3"
+                  onClick={() => setSosModal(false)}
+                >
+                  <span className="text-[16px]">{r.icon}</span>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setSosModal(false)} className="w-full h-10 text-[13px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer">
+              Huỷ bỏ
             </button>
           </div>
         </div>
-
-        {/* Recent trips */}
-        <div className="glass-card p-4 animate-fadeIn">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[14px] font-semibold text-white">Chuyến gần đây</h3>
-            <Link href="/trips" className="text-[11px] text-emerald-400 flex items-center gap-0.5 press-effect">
-              Tất cả <ChevronRight size={12} />
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {RECENT_TRIPS.map((t) => (
-              <div key={t.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-all cursor-pointer press-effect">
-                <div className="h-9 w-9 rounded-xl bg-emerald-500/[0.10] flex items-center justify-center flex-shrink-0">
-                  <CheckCircle size={14} className="text-emerald-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 text-[12px] font-medium text-white">
-                    <span className="truncate">{t.from}</span>
-                    <ChevronRight size={10} className="text-slate-600 flex-shrink-0" />
-                    <span className="truncate">{t.to}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-600">{t.parcels} kiện · {t.weight}kg · {t.time}</p>
-                </div>
-                <ChevronRight size={14} className="text-slate-700 flex-shrink-0" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <BottomNav active="/" />
+      )}
     </div>
   );
 }
