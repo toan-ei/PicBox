@@ -1,9 +1,14 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Package, Truck, MapPin, Shield,
   Clock, BarChart3, ArrowRight,
   CheckCircle, Phone, Mail, Star
 } from 'lucide-react'
+import LandingHeader from '@/components/layout/LandingHeader'
+import { getCurrentUser } from '@/lib/auth-service'
 
 const services = [
   {
@@ -51,32 +56,17 @@ const testimonials = [
 
 export default function LandingPage() {
   const fadeInUp = "animate-[fadeInUp_0.6s_ease-out_both]"
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    setIsLoggedIn(!!getCurrentUser())
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">
 
-      {/* Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="text-xl font-bold text-blue-600">ShipNow</span>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-gray-600">
-            <a href="#services" className="hover:text-blue-600 transition-colors">Dịch vụ</a>
-            <a href="#benefits" className="hover:text-blue-600 transition-colors">Lợi ích</a>
-            <a href="#pricing" className="hover:text-blue-600 transition-colors">Bảng giá</a>
-            <a href="#contact" className="hover:text-blue-600 transition-colors">Liên hệ</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/auth/login" target="_blank"
-              className="text-sm text-gray-600 hover:text-blue-600 font-medium transition-colors">
-              Đăng nhập
-            </Link>
-            <Link href="/auth/register" target="_blank"
-              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-              Đăng ký miễn phí
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Navbar — tự kiểm tra trạng thái đăng nhập */}
+      <LandingHeader />
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 bg-gradient-to-b from-blue-50 to-white">
@@ -96,11 +86,19 @@ export default function LandingPage() {
                 Phủ sóng toàn bộ 34 tỉnh thành Việt Nam.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                <Link href="/auth/register" target="_blank"
-                  className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
-                  Bắt đầu giao hàng miễn phí
-                  <ArrowRight size={16} />
-                </Link>
+                {isLoggedIn ? (
+                  <Link href="/dashboard"
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
+                    Vào Dashboard của bạn
+                    <ArrowRight size={16} />
+                  </Link>
+                ) : (
+                  <Link href="/auth/register"
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
+                    Bắt đầu giao hàng miễn phí
+                    <ArrowRight size={16} />
+                  </Link>
+                )}
                 <a href="#services"
                   className="flex items-center justify-center gap-2 bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold border border-gray-200 hover:border-gray-300 transition-colors text-sm">
                   Xem dịch vụ
@@ -246,7 +244,7 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold text-white mb-4">Bắt đầu ngay hôm nay</h2>
           <p className="text-blue-200 mb-8">Đăng ký miễn phí, tạo đơn đầu tiên trong 2 phút</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/auth/register" target="_blank"
+            <Link href="/auth/register"
               className="flex items-center justify-center gap-2 bg-white text-blue-600 px-8 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors">
               Đăng ký miễn phí
               <ArrowRight size={16} />
@@ -271,17 +269,20 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-sm font-semibold text-white">Liên hệ</p>
-              <a href="tel:1900xxxx" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-                <Phone size={14} /> 1900 xxxx (8h–22h)
+              <a href="tel:0392485227" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+                <Phone size={14} /> 0392 485 227
               </a>
-              <a href="mailto:support@shipnow.vn" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-                <Mail size={14} /> support@shipnow.vn
+              <span className="flex items-center gap-2 text-sm text-gray-400">
+                <Clock size={14} /> 8h–22h hằng ngày
+              </span>
+              <a href="mailto:ducviet0504@gmail.com" className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+                <Mail size={14} /> ducviet0504@gmail.com
               </a>
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-sm font-semibold text-white">Nhanh</p>
-              <Link href="/auth/login" target="_blank" className="text-sm text-gray-400 hover:text-white transition-colors">Đăng nhập</Link>
-              <Link href="/auth/register" target="_blank" className="text-sm text-gray-400 hover:text-white transition-colors">Đăng ký</Link>
+              <Link href="/auth/login" className="text-sm text-gray-400 hover:text-white transition-colors">Đăng nhập</Link>
+              <Link href="/auth/register" className="text-sm text-gray-400 hover:text-white transition-colors">Đăng ký</Link>
               <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">Dashboard</Link>
             </div>
           </div>
