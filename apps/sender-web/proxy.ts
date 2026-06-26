@@ -5,7 +5,6 @@ const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', 
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-
   const token = request.cookies.get('auth_token')?.value
 
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {

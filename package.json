@@ -1,4 +1,9 @@
 {
   "name": "picbox-root",
-  "private": true
+  "private": true,
+  "packageManager": "npm@10.0.0",
+  "workspaces": [
+    "apps/*",
+    "apps/packages/*"
+  ]
 }

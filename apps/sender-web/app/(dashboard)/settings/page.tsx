@@ -3,25 +3,22 @@
 import { useState } from 'react'
 import {
   User, Building2, Bell, Shield,
-  Key, ChevronRight, Camera, Check,
-  Eye, EyeOff, Copy, CheckCheck
+  ChevronRight, Camera, Check,
+  Eye, EyeOff
 } from 'lucide-react'
 
-type Tab = 'profile' | 'business' | 'notifications' | 'security' | 'api'
+type Tab = 'profile' | 'business' | 'notifications' | 'security'
 
 const TABS = [
   { id: 'profile',       label: 'Hồ sơ cá nhân', icon: User },
   { id: 'business',      label: 'Thông tin doanh nghiệp', icon: Building2 },
   { id: 'notifications', label: 'Thông báo', icon: Bell },
   { id: 'security',      label: 'Bảo mật', icon: Shield },
-  { id: 'api',           label: 'API Key (B2B)', icon: Key },
 ] as const
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('profile')
   const [saved, setSaved] = useState(false)
-  const [showKey, setShowKey] = useState(false)
-  const [copied, setCopied] = useState(false)
   const [showOldPw, setShowOldPw] = useState(false)
   const [showNewPw, setShowNewPw] = useState(false)
 
@@ -47,8 +44,6 @@ export default function SettingsPage() {
   })
   const [pwError, setPwError] = useState('')
 
-  const apiKey = 'sk-picbox-2026-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6'
-
   const handleSave = () => {
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -68,12 +63,6 @@ export default function SettingsPage() {
     setSaved(true)
     setPasswords({ old: '', new: '', confirm: '' })
     setTimeout(() => setSaved(false), 2000)
-  }
-
-  const copyKey = () => {
-    navigator.clipboard.writeText(apiKey)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -216,13 +205,12 @@ export default function SettingsPage() {
                       <span className="text-sm text-gray-700">{n.label}</span>
                       <button
                         onClick={() => setNotifications({...notifications, [n.key]: !notifications[n.key as keyof typeof notifications]})}
-                        className={`w-10 h-5.5 rounded-full transition-colors relative flex-shrink-0 ${
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
                           notifications[n.key as keyof typeof notifications] ? 'bg-blue-600' : 'bg-gray-200'
                         }`}
-                        style={{height: '22px', width: '40px'}}
                       >
-                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          notifications[n.key as keyof typeof notifications] ? 'translate-x-5' : 'translate-x-0.5'
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          notifications[n.key as keyof typeof notifications] ? 'translate-x-6' : 'translate-x-1'
                         }`} />
                       </button>
                     </div>
@@ -242,13 +230,12 @@ export default function SettingsPage() {
                       <span className="text-sm text-gray-700">{n.label}</span>
                       <button
                         onClick={() => setNotifications({...notifications, [n.key]: !notifications[n.key as keyof typeof notifications]})}
-                        className={`relative flex-shrink-0 rounded-full transition-colors ${
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
                           notifications[n.key as keyof typeof notifications] ? 'bg-blue-600' : 'bg-gray-200'
                         }`}
-                        style={{height: '22px', width: '40px'}}
                       >
-                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          notifications[n.key as keyof typeof notifications] ? 'translate-x-5' : 'translate-x-0.5'
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          notifications[n.key as keyof typeof notifications] ? 'translate-x-6' : 'translate-x-1'
                         }`} />
                       </button>
                     </div>
@@ -334,51 +321,6 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* API Key */}
-          {tab === 'api' && (
-            <div className="flex flex-col gap-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Tính năng dành cho tài khoản B2B</p>
-                <p className="text-xs text-amber-700">API Key cho phép tích hợp hệ thống của bạn trực tiếp với ShipNow. Không chia sẻ key này với bất kỳ ai.</p>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-4">
-                <p className="text-sm font-semibold text-gray-900">API Key của bạn</p>
-                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
-                  <code className="flex-1 text-xs font-mono text-gray-700 truncate">
-                    {showKey ? apiKey : '•'.repeat(40)}
-                  </code>
-                  <button onClick={() => setShowKey(!showKey)}
-                    className="text-gray-400 hover:text-gray-600 flex-shrink-0">
-                    {showKey ? <EyeOff size={15} /> : <Eye size={15} />}
-                  </button>
-                  <button onClick={copyKey}
-                    className="text-gray-400 hover:text-blue-600 flex-shrink-0 transition-colors">
-                    {copied ? <CheckCheck size={15} className="text-green-500" /> : <Copy size={15} />}
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ví dụ sử dụng</p>
-                  <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-                    <pre className="text-xs text-green-400 font-mono whitespace-pre">{`curl -X POST https://api.shipnow.vn/v1/orders \\
-  -H "Authorization: Bearer ${showKey ? apiKey.slice(0,20)+'...' : 'YOUR_API_KEY'}" \\
-  -H "Content-Type: application/json" \\
-  -d '{"receiver":"Nguyễn Văn A",...}'`}</pre>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button className="flex-1 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:border-red-300 hover:text-red-600 transition-colors">
-                    Tạo lại API Key
-                  </button>
-                  <a href="#" className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold text-center hover:bg-blue-700 transition-colors">
-                    Xem tài liệu API
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
 
         </div>
       </div>
