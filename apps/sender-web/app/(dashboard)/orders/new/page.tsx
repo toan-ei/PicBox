@@ -6,7 +6,8 @@ import Link from 'next/link'
 import {
   Home, ChevronRight, Package, MapPin, Phone,
   User, Banknote, FileText, ArrowLeft,
-  CheckCircle, AlertCircle, Truck, Loader2, Copy, Save
+  CheckCircle, AlertCircle, Truck, Loader2, Copy, Save,
+  Zap, Clock, Snowflake
 } from 'lucide-react'
 import LocationSelector from '@/components/ui/LocationSelector'
 import { createOrder, BRANCH_LIST } from '@picbox/utils'
@@ -28,14 +29,16 @@ interface FormData {
   codAmount: string
   paymentSide: 'sender' | 'receiver'
   note: string
-  serviceType: 'standard' | 'express' | 'sameday'
+  serviceType: 'standard' | 'fast' | 'sameday' | 'bulky' | 'fresh'
   destBranchId: string
 }
 
 const SERVICE_OPTIONS = [
-  { id: 'standard', label: 'Tiêu chuẩn', time: '2–3 ngày', price: '22.000 đ', fee: 22000, desc: 'Giao hàng trong 2–3 ngày làm việc', icon: Package },
-  { id: 'express',  label: 'Nhanh',       time: 'Hôm sau',  price: '35.000 đ', fee: 35000, desc: 'Giao hàng ngay hôm sau trước 12h',  icon: Truck },
-  { id: 'sameday',  label: 'Trong ngày',  time: '4–6 tiếng',price: '55.000 đ', fee: 55000, desc: 'Giao trong ngày, nội thành TP.HCM', icon: CheckCircle },
+  { id: 'standard', label: 'Giao hàng Tiêu chuẩn', time: '2–3 ngày',  price: '22.000 đ', fee: 22000, desc: 'Phù hợp hàng hóa thông thường', icon: Truck },
+  { id: 'fast',     label: 'Giao hàng Nhanh',     time: 'Hôm sau',   price: '35.000 đ', fee: 35000, desc: 'Ưu tiên trước 12h ngày hôm sau', icon: Zap },
+  { id: 'sameday',  label: 'Giao trong ngày',     time: '4–6 tiếng', price: '55.000 đ', fee: 55000, desc: 'Nội thành TP.HCM & Hà Nội', icon: Clock },
+  { id: 'bulky',    label: 'Hàng Cồng Kềnh',      time: '3–5 ngày',  price: '80.000 đ', fee: 80000, desc: 'Hàng nặng, kích thước lớn', icon: Package },
+  { id: 'fresh',    label: 'Hàng Tươi Sống',      time: 'Trong ngày', price: '65.000 đ', fee: 65000, desc: 'Xe bảo ôn duy trì nhiệt độ', icon: Snowflake },
 ]
 
 const ORIGIN_BRANCH = { id: 'HCM_01', name: 'Chi nhánh TP.HCM - Quận 1' }
@@ -393,6 +396,7 @@ export default function NewOrderPage() {
           </SectionCard>
         </div>
 
+        {/* CỘT PHẢI: Đã bổ sung đầy đủ và đồng bộ 5 loại dịch vụ */}
         <div className="flex flex-col gap-5">
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100 bg-gray-50">
@@ -400,17 +404,25 @@ export default function NewOrderPage() {
               <h2 className="text-sm font-semibold text-gray-800">Dịch vụ giao hàng</h2>
             </div>
             <div className="p-4 flex flex-col gap-3">
-              {SERVICE_OPTIONS.map(svc => (
-                <label key={svc.id} className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-all ${form.serviceType === svc.id ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}>
-                  <input type="radio" checked={form.serviceType === svc.id} onChange={() => setForm(f => ({ ...f, serviceType: svc.id as 'standard' | 'express' | 'sameday' }))} />
-                  <div className="flex-1">
-                    <div className="flex justify-between font-semibold text-sm">
-                      <span>{svc.label}</span><span>{svc.price}</span>
+              {SERVICE_OPTIONS.map(svc => {
+                const Icon = svc.icon
+                return (
+                  <label key={svc.id} className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-all ${form.serviceType === svc.id ? 'border-blue-400 bg-blue-50' : 'border-gray-200'}`}>
+                    <input type="radio" checked={form.serviceType === svc.id} onChange={() => setForm(f => ({ ...f, serviceType: svc.id as any }))} />
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100 text-gray-500">
+                      <Icon size={16} />
                     </div>
-                    <p className="text-xs text-gray-500">{svc.desc}</p>
-                  </div>
-                </label>
-              ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between font-semibold text-sm">
+                        <span className="truncate pr-1">{svc.label}</span>
+                        <span className="shrink-0 text-blue-600">{svc.price}</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">Thời gian: {svc.time}</p>
+                      <p className="text-xs text-gray-500 mt-1 leading-normal">{svc.desc}</p>
+                    </div>
+                  </label>
+                )
+              })}
             </div>
           </div>
 
