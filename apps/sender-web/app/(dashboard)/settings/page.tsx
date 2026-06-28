@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   User, Building2, Bell, Shield,
   ChevronRight, Camera, Check,
-  Eye, EyeOff
+  Eye, EyeOff, X
 } from 'lucide-react'
 
 type Tab = 'profile' | 'business' | 'notifications' | 'security'
@@ -26,6 +26,39 @@ export default function SettingsPage() {
     name: 'Nguyễn Đức Vĩ', email: 'ducvi@email.com',
     phone: '0901234567', address: 'Quận 1, TP. Hồ Chí Minh',
   })
+
+  // ── Avatar — chưa có backend upload, lưu tạm base64 vào localStorage ──
+  const [avatar, setAvatar] = useState<string | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('shipnow_avatar')
+    if (saved) setAvatar(saved)
+  }, [])
+
+  const handleAvatarClick = () => avatarInputRef.current?.click()
+
+  const handleAvatarRemove = () => {
+    setAvatar(null)
+    localStorage.removeItem('shipnow_avatar')
+  }
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return
+    if (file.size > 3 * 1024 * 1024) {
+      alert('Ảnh tối đa 3MB, vui lòng chọn ảnh nhỏ hơn')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setAvatar(dataUrl)
+      localStorage.setItem('shipnow_avatar', dataUrl)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const [business, setBusiness] = useState({
     companyName: 'Shop Thời Trang Vĩ', taxCode: '',
@@ -104,12 +137,37 @@ export default function SettingsPage() {
               {/* Avatar */}
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-2xl font-bold text-blue-600">
-                    {profile.name.charAt(0)}
-                  </div>
-                  <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+                  {avatar ? (
+                    <img src={avatar} alt="Ảnh đại diện"
+                      className="w-16 h-16 rounded-full object-cover border border-gray-200" />
+                  ) : (
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-2xl font-bold text-blue-600">
+                      {profile.name.charAt(0)}
+                    </div>
+                  )}
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    title="Đổi ảnh đại diện"
+                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
                     <Camera size={12} />
                   </button>
+                  {avatar && (
+                    <button
+                      type="button"
+                      onClick={handleAvatarRemove}
+                      title="Xoá ảnh đại diện"
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors shadow-sm">
+                      <X size={10} />
+                    </button>
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">{profile.name}</p>
