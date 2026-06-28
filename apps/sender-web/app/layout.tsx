@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import PageTransition from '@/components/ui/PageTransition'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,7 +26,14 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
+        {/*
+          PageTransition bọc toàn bộ children.
+          Component này là 'use client' nên nhận biết được pathname change
+          và áp dụng fade + slide-up animation mỗi khi chuyển trang.
+        */}
+        <PageTransition>
+          {children}
+        </PageTransition>
       </body>
     </html>
   )
