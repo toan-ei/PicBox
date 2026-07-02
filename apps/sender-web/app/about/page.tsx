@@ -4,7 +4,7 @@ import LandingHeader from '@/components/layout/LandingHeader'
 import { ArrowRight, Target, Heart, Zap, Users, Package, TrendingUp, Star } from 'lucide-react'
 
 const team = [
-  { name: 'Lê Đức Toàn', role: 'Lead Developer', exp: 'Sinh viên năm 3', avatar: 'DT' },
+  { name: 'Lê Đức Toàn', role: 'Leader', exp: 'Sinh viên năm 3', avatar: 'DT' },
   { name: 'Lê Ngọc Đức Việt',   role: 'Member', exp: 'Sinh viên năm 4',   avatar: 'DV' },
   { name: 'Phan Hoàng Phúc',       role: 'Member', exp: 'Sinh viên năm 3',       avatar: 'HP' },
   { name: 'Đinh Quốc Trí',     role: 'Member', exp: 'Sinh viên năm 3',   avatar: 'QT' },
@@ -115,18 +115,6 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-16 bg-blue-600">
-        <div className="max-w-xl mx-auto px-6 text-center">
-          <h2 className="text-2xl font-bold text-white mb-3">Tham gia cùng 50.000+ người bán</h2>
-          <p className="text-blue-200 text-sm mb-6">Bắt đầu giao hàng thông minh ngay hôm nay</p>
-          <Link href="/auth/register"
-            className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors">
-            Đăng ký miễn phí <ArrowRight size={15} />
-          </Link>
         </div>
       </section>
 

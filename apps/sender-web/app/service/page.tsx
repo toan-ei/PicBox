@@ -130,17 +130,6 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <section className="py-14 bg-blue-600">
-        <div className="max-w-xl mx-auto px-6 text-center">
-          <h2 className="text-2xl font-bold text-white mb-3">Bắt đầu giao hàng ngay</h2>
-          <p className="text-blue-200 text-sm mb-6">Đăng ký miễn phí, không phí ẩn, hủy bất kỳ lúc nào</p>
-          <Link href="/auth/register"
-            className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-colors text-sm">
-            Đăng ký miễn phí <ArrowRight size={16} />
-          </Link>
-        </div>
-      </section>
-
       <Footer />
     </div>
   )
