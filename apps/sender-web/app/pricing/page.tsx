@@ -169,10 +169,6 @@ export default function PricingPage() {
               className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors">
               <Phone size={15} /> Liên hệ tư vấn
             </Link>
-            <Link href="/auth/register"
-              className="flex items-center gap-2 border border-white text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-blue-500 transition-colors">
-              Đăng ký miễn phí <ArrowRight size={15} />
-            </Link>
           </div>
         </div>
       </section>
