@@ -2,7 +2,6 @@
 
 Hệ thống quản lý giao nhận hàng hóa theo mô hình **hub-and-spoke**, xây dựng bằng kiến trúc microservices. PicBox hỗ trợ toàn bộ luồng vận hành: khách tạo đơn, shipper lấy hàng, phân loại tại hub, vận chuyển liên hub bằng xe tải, giao hàng, thu hộ COD và thông báo tự động.
 
-> Bản phân tích chi tiết kiến trúc và các vấn đề còn tồn tại nằm trong [ANALYSIS.md](ANALYSIS.md). Tài liệu đồ án đầy đủ nằm trong thư mục [docs/](docs/).
 
 ---
 
